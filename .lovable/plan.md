@@ -1,101 +1,124 @@
-# خطة المرحلة الأولى: قاعدة البيانات والخلفية لمنصة التبرعات
+# خطة بناء الصفحة الرئيسية — أضحيتك أجران (نسخة معدّلة)
 
-سيتم إعداد كامل البنية الخلفية على Lovable Cloud (Supabase) دون أي واجهة أمامية. عند الموافقة، سيُفعَّل Lovable Cloud تلقائياً.
+## 1. نظام التصميم (sweet-adjustments)
 
----
+تحديث `src/index.css` و`tailwind.config.ts` بألوان HSL:
 
-## 1. مخطط قاعدة البيانات (Migrations)
+| التوكن | HSL | الأصل |
+|--------|-----|-------|
+| `--background` (cream) | `40 50% 93%` | #f5efe4 |
+| `--cream-dark` | `38 38% 88%` | #ede5d4 |
+| `--sand` | `36 47% 61%` | #c9a96e |
+| `--brown` (foreground) | `30 40% 21%` | #4a3520 |
+| `--brown-mid` | `30 43% 29%` | #6b4c2a |
+| `--primary` (green) | `150 38% 26%` | #2a5c45 |
+| `--green-mid` | `150 36% 33%` | #357558 |
+| `--green-pale` | `144 27% 93%` | #e8f2ec |
+| `--muted-foreground` | `33 25% 38%` | #7a6248 |
+| `--radius` | `1rem` | حواف ناعمة |
 
-سيُنشأ migration واحد يحتوي:
+- خطوط: `Noto Naskh Arabic` + `Inter` من Google Fonts.
+- Tailwind: ألوان مخصّصة (`cream`, `sand`, `brown`, `green`, `green-pale`)، `boxShadow.soft / elevated`، `borderRadius.xl/2xl`.
+- إلغاء وضع dark (نبقي الفاتح فقط).
 
-### نوع مخصص
-- `user_role` enum بقيمة `'admin'`
+## 2. هيكل الملفات
 
-### جدول `campaigns`
-الحملات متعددة اللغات (عربي/تركي/إنجليزي)، مع هدف ومبلغ مُجمَّع وعلم تفعيل.
+```text
+src/
+  i18n/
+    config.ts
+    locales/{ar,tr,en}.json
+  hooks/useDirection.ts          ← يضبط <html lang/dir>
+  lib/
+    constants.ts                 ← EID_DATE = 2026-05-27, USD_TO_TRY = 45
+    pricing.ts                   ← matrix الدول/الحيوانات + formatPrice
+  components/site/
+    Header.tsx
+    CountdownBar.tsx
+    LanguageSwitcher.tsx
+    Hero.tsx
+    Tracks.tsx
+    TrackCard.tsx
+    OrderForm.tsx                ← Dialog من 3 خطوات
+    PlaceholderImage.tsx         ← بديل صور Unsplash
+    TrustSection.tsx
+    Faq.tsx
+    Footer.tsx
+  pages/
+    Index.tsx
+    Success.tsx                  ← /success
+    Failed.tsx                   ← /failed
+main.tsx                          ← يستورد ./i18n/config
+App.tsx                           ← يضيف routes /success و /failed
+```
 
-### جدول `donations`
-سجل التبرعات (للضيوف والمسجّلين)، يربط بحملة، ويحمل حالة الدفع ومرجع المزوّد ورابط الدفع وتاريخ انتهاء الصلاحية و metadata.
+## 3. العملة (مُحدّث)
 
-### جدول `user_roles`
-يفصل الأدوار عن جدول المستخدمين (منعاً لتصعيد الصلاحيات)، مع قيد `unique(user_id, role)`.
+`lib/pricing.ts`:
+```text
+USD_TO_TRY = 45  (ثابت)
 
-### دالة `has_role(role_name)`
-دالة `SECURITY DEFINER` بـ `search_path = public` للتحقق من صلاحية المستخدم الحالي دون التسبب بحلقات RLS.
+formatPrice(amountUsdCents, locale):
+  if locale === 'tr':  return `${(amountUsd * 45).toLocaleString('tr-TR')} ₺`
+  else:                return `$${amountUsd}`
+```
+- الأسعار في الكود تُخزَّن بالـ USD سنتات.
+- `ar` و `en` → عرض `$` فقط، بدون أي إشارة لليرة.
+- `tr` → عرض `₺` فقط، بدون أي إشارة للدولار.
+- عند إرسال الطلب لـ ZiraatPay لاحقاً: تُمرَّر `currency: "TRY"` للمستخدم التركي و`currency: "USD"` لغيره.
 
-> ملاحظة أمان: ستُستخدم بالشكل الموصى به `has_role(auth.uid(), role)` داخلياً، مع الإبقاء على التوقيع المطلوب `has_role(role_name)` كما طلبت.
+## 4. الصور — Placeholders (مُحدّث)
 
----
+`PlaceholderImage.tsx`:
+- `<div>` بنسبة 4:3 أو 16:9، تدرّج `from-cream-dark to-green/15`، حدّ ذهبي خفيف، أيقونة مركزية من lucide (`Heart`, `Beef`, `Package` …) بلون green.
+- لا أي روابط Unsplash. يُستخدم في Hero + بطاقات Tracks + Trust.
 
-## 2. سياسات RLS
+## 5. الصفحات
 
-### `campaigns`
-- RLS مُفعَّل
-- SELECT عام عندما `active = true`
-- INSERT / UPDATE / DELETE للمسؤولين فقط
+### `/` (Index)
+أقسام بالترتيب: Header → Hero → Tracks → OrderForm Dialog → Trust → FAQ → Footer.
 
-### `donations`
-- RLS مُفعَّل
-- INSERT مسموح للجميع (تبرع كضيف) — مع تحقق على مستوى Edge Function
-- SELECT / UPDATE / DELETE للمسؤولين فقط
-- تحديث `raised_amount` و status يتم عبر Edge Function بصلاحيات `service_role` (يتجاوز RLS بأمان)
+**Header**: شريط بنّي علوي يحوي شعار "ق" دائري أخضر + اسم الوقف + `LanguageSwitcher` (3 pills). تحته `CountdownBar` بتدرّج أخضر يعرض `DD : HH : MM : SS` لـ EID_DATE = 2026-05-27، يحدّث كل ثانية. زر CTA يقفز لـ `#tracks`.
 
-### `user_roles`
-- RLS مُفعَّل
-- SELECT للمستخدم على صفوفه فقط
-- جميع التعديلات للمسؤولين فقط
+**Hero**: خلفية cream مع دوائر radial-gradient، شارة "موسم الأضحية 1447هـ"، عنوان كبير "أضحيتك أجران"، فقرة في صندوق بحدّ ذهبي logical (`border-s-4 border-sand`)، زرّان (primary أخضر + outline)، 3 بطاقات إحصائيات (5000+ / 6 / 5+).
 
----
+**Tracks**: شبكة 3 أعمدة (1 على الموبايل):
+- المسار 1 — انحر سنّة وأطعم غزة، $100 ثابت، شارة "الأكثر طلباً ⭐".
+- المسار 2 — أضحيتك تعبر الحصار، $175 ثابت.
+- المسار 3 — الأضاحي الحيّة، يبدأ من $115. عند اختياره يفتح OrderForm مع قوائم منسدلة (دولة 6 خيارات + حيوان: خروف/ماعز $115 أو بقرة سبع $250) والسعر يُحدَّث live.
 
-## 3. بيانات تجريبية
+**OrderForm** (Dialog، 3 خطوات بمؤشّر progress):
+1. **الاختيار**: اسم المسار، (للمسار 3) قائمتا الدولة والحيوان، عدد الأضاحي (≥1)، الإجمالي live بالعملة الحالية.
+2. **بياناتك**: الاسم* + البريد* + الهاتف + النية/الأسماء + checkbox توكيل شرعي* (zod + react-hook-form).
+3. **الدفع**: ملخص + زر "المتابعة للدفع" (mock → `toast` + `navigate("/success")` للتجربة)، شارات VISA/MC SVG inline + 🔒.
 
-3 حملات نشطة بثلاث لغات (مثلاً: مساعدات شتوية، إفطار صائم، كفالة يتيم) بأهداف ومبالغ وهمية وصور placeholder.
+**Trust**: 3 بطاقات (`Camera`, `ShieldCheck`, `FileCheck`).
+**FAQ**: Accordion من Radix بـ 5 أسئلة من i18n.
+**Footer**: شعار + روابط social (lucide) + سطر حقوق النشر بالسنة الجارية.
 
----
+### `/success` (مُضاف)
+صفحة بسيطة بخلفية cream وبطاقة وسط الشاشة:
+- أيقونة `CheckCircle2` خضراء كبيرة.
+- عنوان "تمّ استلام أضحيتك بفضل الله" + نص توضيحي + أيقونة قلب.
+- زرّان: "العودة للرئيسية" → `/` و "وكّل أضحية أخرى" → `/#tracks`.
+- يحترم اللغة والاتجاه الحاليَّين عبر i18n.
 
-## 4. Edge Functions
+### `/failed` (مُضاف)
+نفس البنية بأيقونة `XCircle` بلون destructive مع نص "تعذّر إتمام الدفع" + سبب اختياري من query (`?reason=...`) + زر "إعادة المحاولة" يعود إلى `/#tracks`.
 
-### أ. `create-payment` (عام، بدون JWT)
-- التحقق من المدخلات بـ Zod: `campaign_id (uuid)`, `donor_name (1..100)`, `donor_email (email)`, `donor_phone (اختياري)`, `amount (int > 0)`, `currency (USD|TRY|EUR)`
-- التحقق من وجود الحملة وأنها `active = true`
-- إدراج صف في `donations` بحالة `pending`
-- حالياً: توليد `payment_url` وهمي:
-  `https://mock-payment.test/pay?ref={donation_id}`
-- تعيين `expires_at = now() + 30 minutes`
-- إرجاع `{ donation_id, payment_url, expires_at }`
-- CORS كامل + `console.log` للتتبع
+## 6. i18n
 
-### ب. `payment-callback` (عام، بدون JWT)
-- مدخلات Zod: `donation_id`, `status (success|failed)`, `provider_ref`, `signature`
-- التحقق من التوقيع: حالياً Mock يقبل أي قيمة غير فارغة (مع TODO واضح لـ HMAC ZiraatPay لاحقاً)
-- تحديث `donations.status` و `provider_ref` و `metadata` (الـ payload الكامل)
-- عند `success`: زيادة `campaigns.raised_amount` ذرّياً (RPC أو UPDATE شرطي يمنع الزيادة المزدوجة إن وصل callback مرتين)
-- إرجاع `{ success: true, donation_id, status }`
+- `react-i18next` + `i18next` + `i18next-browser-languagedetector`.
+- 3 ملفات JSON بنفس البنية. مفاتيح رئيسية: `header.*`, `hero.*`, `tracks.*`, `track1/2/3.*`, `form.*`, `trust.*`, `faq.*`, `footer.*`, `success.*`, `failed.*`, `price.format`.
+- `useDirection`: عند تغيير اللغة يُحدِّث `document.documentElement.lang/dir` (`ar`→rtl، باقيها ltr).
 
-كلا الدالتين تستخدمان `service_role` للوصول الموثوق، وتتضمنان `corsHeaders` في كل الردود (بما فيها الأخطاء).
+## 7. الاستجابة و RTL
 
----
+- استخدام classes منطقية (`ms-`, `me-`, `border-s`, `text-start`) لتجنّب التبديل اليدوي.
+- `md:` (768px) للتبديل من عمود إلى شبكة.
+- على الموبايل: زر CTA في الـ Header يُختصر لأيقونة.
 
-## 5. الأسرار (Secrets)
+## 8. خارج النطاق الآن
 
-ستُطلب إضافتها (قيم Mock مؤقتة):
-- `ZIRAATPAY_MERCHANT_ID` = `MOCK_MERCHANT`
-- `ZIRAATPAY_TERMINAL_ID` = `MOCK_TERMINAL`
-- `ZIRAATPAY_HASH_KEY` = `MOCK_HASH_KEY`
-
----
-
-## 6. اعتبارات
-
-- جميع المبالغ بالـ integer (قروش/سنت)
-- لا واجهة أمامية في هذه المرحلة
-- بعد التطبيق سيُجرى Security Scan تلقائي للتأكد من سلامة RLS
-- ملف `App.tsx`/`Index.tsx` يبقى كما هو (سيُستخدم لاحقاً في المرحلة الثانية)
-
----
-
-## مخرجات هذه المرحلة
-1. Migration كامل (جداول + enum + دالة + RLS + seed)
-2. دالتان Edge: `create-payment`, `payment-callback`
-3. 3 أسرار مُسجَّلة في Cloud
-4. تقرير فحص أمان
+- لا اتصال بالـ Supabase ولا استدعاء `create-payment` (mock فقط ينقل لـ `/success`).
+- ZiraatPay نفسه: نُجهّز فقط مفتاح العملة (`TRY` للتركي، `USD` لغيره) ليُمرَّر لاحقاً دون تغيير الواجهة.
