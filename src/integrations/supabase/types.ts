@@ -92,13 +92,8 @@ export type Database = {
       product_price_matrix: {
         Row: {
           active: boolean
-          animal_ar: string
-          animal_en: string
-          animal_tr: string
-          country_ar: string
+          animal_code: string
           country_code: string
-          country_en: string
-          country_tr: string
           created_at: string
           currency: string
           id: string
@@ -107,13 +102,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          animal_ar: string
-          animal_en: string
-          animal_tr: string
-          country_ar: string
+          animal_code?: string
           country_code: string
-          country_en: string
-          country_tr: string
           created_at?: string
           currency?: string
           id?: string
@@ -122,13 +112,8 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          animal_ar?: string
-          animal_en?: string
-          animal_tr?: string
-          country_ar?: string
+          animal_code?: string
           country_code?: string
-          country_en?: string
-          country_tr?: string
           created_at?: string
           currency?: string
           id?: string
@@ -151,15 +136,9 @@ export type Database = {
           base_price: number
           created_at: string
           currency: string
-          description_ar: string | null
-          description_en: string | null
-          description_tr: string | null
           display_order: number
           id: string
           image_url: string | null
-          name_ar: string
-          name_en: string
-          name_tr: string
           pricing_type: string
         }
         Insert: {
@@ -167,15 +146,9 @@ export type Database = {
           base_price: number
           created_at?: string
           currency?: string
-          description_ar?: string | null
-          description_en?: string | null
-          description_tr?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
-          name_ar: string
-          name_en: string
-          name_tr: string
           pricing_type: string
         }
         Update: {
@@ -183,15 +156,9 @@ export type Database = {
           base_price?: number
           created_at?: string
           currency?: string
-          description_ar?: string | null
-          description_en?: string | null
-          description_tr?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
-          name_ar?: string
-          name_en?: string
-          name_tr?: string
           pricing_type?: string
         }
         Relationships: []
