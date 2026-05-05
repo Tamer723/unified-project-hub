@@ -14,58 +14,8 @@ export type Database = {
   }
   public: {
     Tables: {
-      campaigns: {
+      orders: {
         Row: {
-          active: boolean
-          created_at: string
-          currency: string
-          description_ar: string | null
-          description_en: string | null
-          description_tr: string | null
-          goal_amount: number
-          id: string
-          image_url: string | null
-          raised_amount: number
-          title_ar: string
-          title_en: string
-          title_tr: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          description_ar?: string | null
-          description_en?: string | null
-          description_tr?: string | null
-          goal_amount: number
-          id?: string
-          image_url?: string | null
-          raised_amount?: number
-          title_ar: string
-          title_en: string
-          title_tr: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          description_ar?: string | null
-          description_en?: string | null
-          description_tr?: string | null
-          goal_amount?: number
-          id?: string
-          image_url?: string | null
-          raised_amount?: number
-          title_ar?: string
-          title_en?: string
-          title_tr?: string
-        }
-        Relationships: []
-      }
-      donations: {
-        Row: {
-          amount: number
-          campaign_id: string | null
           created_at: string
           currency: string
           donor_email: string
@@ -73,14 +23,18 @@ export type Database = {
           donor_phone: string | null
           expires_at: string | null
           id: string
+          intention: string | null
+          matrix_id: string | null
           metadata: Json | null
           payment_url: string | null
+          product_id: string
           provider_ref: string | null
+          quantity: number
           status: string
+          total_amount: number
+          unit_price: number
         }
         Insert: {
-          amount: number
-          campaign_id?: string | null
           created_at?: string
           currency: string
           donor_email: string
@@ -88,14 +42,18 @@ export type Database = {
           donor_phone?: string | null
           expires_at?: string | null
           id?: string
+          intention?: string | null
+          matrix_id?: string | null
           metadata?: Json | null
           payment_url?: string | null
+          product_id: string
           provider_ref?: string | null
+          quantity?: number
           status?: string
+          total_amount: number
+          unit_price: number
         }
         Update: {
-          amount?: number
-          campaign_id?: string | null
           created_at?: string
           currency?: string
           donor_email?: string
@@ -103,20 +61,140 @@ export type Database = {
           donor_phone?: string | null
           expires_at?: string | null
           id?: string
+          intention?: string | null
+          matrix_id?: string | null
           metadata?: Json | null
           payment_url?: string | null
+          product_id?: string
           provider_ref?: string | null
+          quantity?: number
           status?: string
+          total_amount?: number
+          unit_price?: number
         }
         Relationships: [
           {
-            foreignKeyName: "donations_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "orders_matrix_id_fkey"
+            columns: ["matrix_id"]
             isOneToOne: false
-            referencedRelation: "campaigns"
+            referencedRelation: "product_price_matrix"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_price_matrix: {
+        Row: {
+          active: boolean
+          animal_ar: string
+          animal_en: string
+          animal_tr: string
+          country_ar: string
+          country_code: string
+          country_en: string
+          country_tr: string
+          created_at: string
+          currency: string
+          id: string
+          price: number
+          product_id: string
+        }
+        Insert: {
+          active?: boolean
+          animal_ar: string
+          animal_en: string
+          animal_tr: string
+          country_ar: string
+          country_code: string
+          country_en: string
+          country_tr: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price: number
+          product_id: string
+        }
+        Update: {
+          active?: boolean
+          animal_ar?: string
+          animal_en?: string
+          animal_tr?: string
+          country_ar?: string
+          country_code?: string
+          country_en?: string
+          country_tr?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_matrix_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          base_price: number
+          created_at: string
+          currency: string
+          description_ar: string | null
+          description_en: string | null
+          description_tr: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          name_ar: string
+          name_en: string
+          name_tr: string
+          pricing_type: string
+        }
+        Insert: {
+          active?: boolean
+          base_price: number
+          created_at?: string
+          currency?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_tr?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          name_ar: string
+          name_en: string
+          name_tr: string
+          pricing_type: string
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          created_at?: string
+          currency?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_tr?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          name_ar?: string
+          name_en?: string
+          name_tr?: string
+          pricing_type?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
