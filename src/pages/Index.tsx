@@ -1,16 +1,36 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { useDirection } from "@/hooks/useDirection";
+import { Header } from "@/components/site/Header";
+import { Hero } from "@/components/site/Hero";
+import { Tracks, type TrackId } from "@/components/site/Tracks";
+import { OrderForm } from "@/components/site/OrderForm";
+import { TrustSection } from "@/components/site/TrustSection";
+import { Faq } from "@/components/site/Faq";
+import { Footer } from "@/components/site/Footer";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  useDirection();
+  const [open, setOpen] = useState(false);
+  const [track, setTrack] = useState<TrackId | null>(null);
+
+  const onSelect = (id: TrackId) => {
+    setTrack(id);
+    setOpen(true);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-cream">
+      <Header />
+      <main>
+        <Hero />
+        <Tracks onSelect={onSelect} />
+        <TrustSection />
+        <Faq />
+      </main>
+      <Footer />
+      <OrderForm open={open} trackId={track} onOpenChange={setOpen} />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
