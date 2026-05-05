@@ -14,16 +14,150 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          description_ar: string | null
+          description_en: string | null
+          description_tr: string | null
+          goal_amount: number
+          id: string
+          image_url: string | null
+          raised_amount: number
+          title_ar: string
+          title_en: string
+          title_tr: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_tr?: string | null
+          goal_amount: number
+          id?: string
+          image_url?: string | null
+          raised_amount?: number
+          title_ar: string
+          title_en: string
+          title_tr: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_tr?: string | null
+          goal_amount?: number
+          id?: string
+          image_url?: string | null
+          raised_amount?: number
+          title_ar?: string
+          title_en?: string
+          title_tr?: string
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          campaign_id: string | null
+          created_at: string
+          currency: string
+          donor_email: string
+          donor_name: string
+          donor_phone: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          payment_url: string | null
+          provider_ref: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          campaign_id?: string | null
+          created_at?: string
+          currency: string
+          donor_email: string
+          donor_name: string
+          donor_phone?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_url?: string | null
+          provider_ref?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string | null
+          created_at?: string
+          currency?: string
+          donor_email?: string
+          donor_name?: string
+          donor_phone?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_url?: string | null
+          provider_ref?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      increment_raised: {
+        Args: { _amount: number; _campaign_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +284,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin"],
+    },
   },
 } as const
