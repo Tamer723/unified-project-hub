@@ -1,24 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { z } from "https://esm.sh/zod@3.23.8";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-import { z } from "https://esm.sh/zod@3.23.8";
 
 const BodySchema = z.object({
-  campaign_id: z.string().uuid(),
-  donor_name: z.string().trim().min(1).max(100),
-  donor_email: z.string().trim().email().max(255),
-  donor_phone: z.string().trim().max(30).optional().nullable(),
-  amount: z.number().int().positive().max(100_000_000), // in cents
-  currency: z.enum(["USD", "TRY", "EUR"]),
+  product_id: z.string().uuid(),
+  matrix_id: z.string().uuid().optional().nullable(),
+  donor_name: z.string().min(2),
+  donor_email: z.string().email(),
+  donor_phone: z.string().optional().nullable(),
+  quantity: z.number().int().min(1).max(100),
+  intention: z.string().optional().nullable(),
+  currency: z.enum(["USD", "TRY"]),
 });
-
-// ZiraatPay config — defaults for dev, override via secrets later
-const MERCHANT_ID = Deno.env.get("ZIRAATPAY_MERCHANT_ID") ?? "MOCK_MERCHANT";
-const TERMINAL_ID = Deno.env.get("ZIRAATPAY_TERMINAL_ID") ?? "MOCK_TERMINAL";
-const HASH_KEY = Deno.env.get("ZIRAATPAY_HASH_KEY") ?? "MOCK_HASH_KEY";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,88 +24,105 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const json = await req.json().catch(() => null);
-    const parsed = BodySchema.safeParse(json);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const body = await req.json();
+    const parsed = BodySchema.safeParse(body);
+
     if (!parsed.success) {
-      console.log("[create-payment] validation failed", parsed.error.flatten());
       return new Response(
-        JSON.stringify({ error: parsed.error.flatten().fieldErrors }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ error: "Invalid input", details: parsed.error.errors }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { campaign_id, donor_name, donor_email, donor_phone, amount, currency } = parsed.data;
-    console.log("[create-payment] start", { campaign_id, amount, currency });
+    const { product_id, matrix_id, donor_name, donor_email,
+            donor_phone, quantity, intention, currency } = parsed.data;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("id, base_price, pricing_type, active")
+      .eq("id", product_id)
+      .single();
 
-    // Verify campaign exists and is active
-    const { data: campaign, error: cErr } = await supabase
-      .from("campaigns")
-      .select("id, active, currency")
-      .eq("id", campaign_id)
-      .maybeSingle();
-
-    if (cErr) {
-      console.error("[create-payment] campaign lookup error", cErr);
-      return new Response(JSON.stringify({ error: "Database error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!campaign || !campaign.active) {
-      console.log("[create-payment] campaign not found or inactive", campaign_id);
-      return new Response(JSON.stringify({ error: "Campaign not found or inactive" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (productError || !product || !product.active) {
+      return new Response(
+        JSON.stringify({ error: "Product not found or inactive" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    let unit_price = product.base_price;
 
-    // Insert pending donation
-    const { data: donation, error: dErr } = await supabase
-      .from("donations")
+    if (product.pricing_type === "matrix" && matrix_id) {
+      const { data: matrix, error: matrixError } = await supabase
+        .from("product_price_matrix")
+        .select("price, active")
+        .eq("id", matrix_id)
+        .eq("product_id", product_id)
+        .single();
+
+      if (matrixError || !matrix || !matrix.active) {
+        return new Response(
+          JSON.stringify({ error: "Invalid price option" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      unit_price = matrix.price;
+    }
+
+    const total_amount = unit_price * quantity;
+    const expires_at = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
       .insert({
-        campaign_id,
+        product_id,
+        matrix_id: matrix_id || null,
         donor_name,
         donor_email,
-        donor_phone: donor_phone ?? null,
-        amount,
+        donor_phone: donor_phone || null,
+        quantity,
+        intention: intention || null,
+        unit_price,
+        total_amount,
         currency,
         status: "pending",
-        expires_at: expiresAt,
-        metadata: { merchant_id: MERCHANT_ID, terminal_id: TERMINAL_ID },
+        expires_at,
       })
       .select("id")
       .single();
 
-    if (dErr || !donation) {
-      console.error("[create-payment] insert error", dErr);
-      return new Response(JSON.stringify({ error: "Failed to create donation" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (orderError || !order) {
+      console.error("Order insert error:", orderError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create order" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // TODO: integrate real ZiraatPay using HASH_KEY for HMAC signing
-    const paymentUrl = `https://mock-payment.test/pay?ref=${donation.id}`;
+    const payment_url = `https://mock-payment.test/pay?ref=${order.id}`;
 
     await supabase
-      .from("donations")
-      .update({ payment_url: paymentUrl })
-      .eq("id", donation.id);
+      .from("orders")
+      .update({ payment_url })
+      .eq("id", order.id);
 
-    console.log("[create-payment] success", { donation_id: donation.id });
+    console.log("Order created:", order.id, "Amount:", total_amount, currency);
 
     return new Response(
-      JSON.stringify({ donation_id: donation.id, payment_url: paymentUrl, expires_at: expiresAt }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ order_id: order.id, payment_url, expires_at }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
-    console.error("[create-payment] unexpected", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Unexpected error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
