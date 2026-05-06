@@ -125,7 +125,8 @@ export function CheckoutSection({ selection }: Props) {
   const phoneExample = (() => {
     try {
       const ex = getExampleNumber(countryCode, examples as never);
-      return ex?.formatNational() ?? "";
+      if (!ex) return "";
+      return new AsYouType(countryCode).input(ex.nationalNumber as string);
     } catch { return ""; }
   })();
 
