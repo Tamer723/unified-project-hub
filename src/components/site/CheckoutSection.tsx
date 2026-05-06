@@ -334,7 +334,9 @@ export function CheckoutSection({ selection }: Props) {
                     placeholder={phoneExample || "Phone number"}
                     value={phone}
                     onChange={(e) => {
-                      const formatted = new AsYouType(countryCode).input(e.target.value);
+                      // Strip leading zeros (national trunk prefix) — user enters subscriber number only
+                      const raw = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
+                      const formatted = new AsYouType(countryCode).input(raw);
                       setPhone(formatted);
                       if (!formatted || isValidPhoneNumber(formatted, countryCode)) clearError("phone");
                     }}
