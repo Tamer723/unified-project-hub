@@ -204,6 +204,13 @@ export default function Orders() {
                         <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
                       </td>
                       <td className="py-2">
+                        <div className="flex items-center gap-1 text-sm">
+                          <span>{isoFlag(o.donor_country) || "🏳️"}</span>
+                          <span className="font-mono text-[10px]">{o.donor_country ?? "—"}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">{o.donor_ip ?? "—"}</div>
+                      </td>
+                      <td className="py-2">
                         <div className="font-medium">{trackLabel(o)}</div>
                         {cc || ac ? (
                           <div className="mt-1 flex flex-wrap gap-1">
