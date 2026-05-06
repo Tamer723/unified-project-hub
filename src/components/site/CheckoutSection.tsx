@@ -441,7 +441,13 @@ export function CheckoutSection({ selection }: Props) {
                 {intention && <Row k={t("form.intention")} v={intention} />}
               </div>
 
-              {!cardOnSite && (
+              {!providerReady && (
+                <div className="rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm text-brown-mid text-center">
+                  ...
+                </div>
+              )}
+
+              {providerReady && !cardOnSite && (
                 <div className="rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm text-brown-mid">
                   {locale === "ar"
                     ? "سيتم تحويلك إلى صفحة الدفع الآمنة لإدخال بيانات بطاقتك."
