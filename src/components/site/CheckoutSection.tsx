@@ -251,6 +251,8 @@ export function CheckoutSection({ selection }: Props) {
           track_animal: selection.animal ?? null,
           captchaToken,
           card: cardPayload,
+          lang: locale,
+          origin: window.location.origin,
         },
       });
 
