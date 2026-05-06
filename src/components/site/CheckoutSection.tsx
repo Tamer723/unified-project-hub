@@ -266,6 +266,10 @@ export function CheckoutSection({ selection }: Props) {
         navigate(url);
       } else if (data.mode === "redirect_post" && data.action && data.fields) {
         submitRedirectPost(data.action, data.fields);
+      } else if (data.mode === "redirect_url" && data.action) {
+        window.location.href = data.action;
+      } else if (data.mode === "render_html" && data.html) {
+        setThreeDSHtml(data.html);
       } else {
         toast.error("Unexpected payment response");
       }
