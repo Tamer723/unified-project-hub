@@ -23,6 +23,8 @@ const Body = z.object({
   product_id: z.string().uuid().optional().nullable(),
   matrix_id: z.string().uuid().optional().nullable(),
   track_code: z.string().max(40).optional().nullable(),
+  track_country: z.string().max(8).optional().nullable(),
+  track_animal: z.string().max(40).optional().nullable(),
   captchaToken: z.string().min(1).max(2048),
   card: z.object({
     number: z.string().min(13).max(25),
