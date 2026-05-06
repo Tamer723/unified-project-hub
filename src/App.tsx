@@ -19,6 +19,7 @@ import Products from "./pages/admin/Products.tsx";
 import Pricing from "./pages/admin/Pricing.tsx";
 import Users from "./pages/admin/Users.tsx";
 import Audit from "./pages/admin/Audit.tsx";
+import Payments from "./pages/admin/Payments.tsx";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="pricing" element={<Pricing />} />
             <Route path="users" element={<Users />} />
             <Route path="account" element={<Account />} />
+            <Route path="payments" element={<Payments />} />
             <Route path="audit" element={<Audit />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

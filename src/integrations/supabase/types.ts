@@ -101,6 +101,30 @@ export type Database = {
           },
         ]
       }
+      payment_settings: {
+        Row: {
+          active_provider: string
+          id: string
+          test_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active_provider?: string
+          id?: string
+          test_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active_provider?: string
+          id?: string
+          test_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       product_price_matrix: {
         Row: {
           active: boolean
@@ -213,6 +237,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_active_payment_provider: {
+        Args: never
+        Returns: {
+          active_provider: string
+          test_mode: boolean
+        }[]
+      }
       has_any_role: {
         Args: { _roles: Database["public"]["Enums"]["user_role"][] }
         Returns: boolean

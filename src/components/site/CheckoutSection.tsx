@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Lock, CreditCard } from "lucide-react";
@@ -108,6 +108,16 @@ export function CheckoutSection({ selection }: Props) {
   const [agree, setAgree] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeProvider, setActiveProvider] = useState<"mock" | "nestpay_3d" | "nestpay_hosting">("mock");
+
+  useEffect(() => {
+    supabase.rpc("get_active_payment_provider").then(({ data }) => {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.active_provider) setActiveProvider(row.active_provider as typeof activeProvider);
+    });
+  }, []);
+
+  const cardOnSite = activeProvider !== "nestpay_hosting";
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
@@ -180,6 +190,22 @@ export function CheckoutSection({ selection }: Props) {
     return Object.keys(e).length === 0;
   };
 
+  const submitRedirectPost = (action: string, fields: Record<string, string>) => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    form.style.display = "none";
+    Object.entries(fields).forEach(([k, v]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = k;
+      input.value = v ?? "";
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  };
+
   const handlePay = async () => {
     if (!agree) {
       toast.error(t("form.errors.consent"));
@@ -189,7 +215,7 @@ export function CheckoutSection({ selection }: Props) {
       toast.error(t("checkout.select_first"));
       return;
     }
-    if (!validateCard()) return;
+    if (cardOnSite && !validateCard()) return;
     if (!captchaToken) {
       toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
       return;
@@ -197,10 +223,21 @@ export function CheckoutSection({ selection }: Props) {
 
     setPaying(true);
     try {
-      const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
-      const digits = cardNumber.replace(/\D/g, "");
+      const cardPayload = cardOnSite
+        ? (() => {
+            const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
+            const digits = cardNumber.replace(/\D/g, "");
+            return {
+              number: digits,
+              holder: cardHolder.trim() || undefined,
+              expMonth: parseInt(mm, 10),
+              expYear: 2000 + parseInt(yy, 10),
+              cvc: cardCvc.replace(/\D/g, ""),
+            };
+          })()
+        : undefined;
 
-      const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
+      const { data, error } = await supabase.functions.invoke("payment-init", {
         body: {
           donor: { name, email, phone: phone ? `+${getCountryCallingCode(countryCode)}${phone.replace(/\D/g, "")}` : null },
           intention: intention || null,
@@ -211,13 +248,7 @@ export function CheckoutSection({ selection }: Props) {
           track_country: selection.country ?? null,
           track_animal: selection.animal ?? null,
           captchaToken,
-          card: {
-            number: digits,
-            holder: cardHolder.trim() || undefined,
-            expMonth: parseInt(mm, 10),
-            expYear: 2000 + parseInt(yy, 10),
-            cvc: cardCvc.replace(/\D/g, ""),
-          },
+          card: cardPayload,
         },
       });
 
@@ -227,9 +258,15 @@ export function CheckoutSection({ selection }: Props) {
         return;
       }
 
-      const last4 = digits.slice(-4);
-      const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
-      navigate(url);
+      if (data.mode === "internal_3ds" && data.threeDSUrl) {
+        const last4 = cardPayload ? cardPayload.number.slice(-4) : (data.last4 ?? "0000");
+        const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
+        navigate(url);
+      } else if (data.mode === "redirect_post" && data.action && data.fields) {
+        submitRedirectPost(data.action, data.fields);
+      } else {
+        toast.error("Unexpected payment response");
+      }
     } catch (err) {
       console.error(err);
       toast.error(locale === "ar" ? "خطأ في الاتصال" : "Connection error");
@@ -384,6 +421,17 @@ export function CheckoutSection({ selection }: Props) {
                 {intention && <Row k={t("form.intention")} v={intention} />}
               </div>
 
+              {!cardOnSite && (
+                <div className="rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm text-brown-mid">
+                  {locale === "ar"
+                    ? "سيتم تحويلك إلى صفحة الدفع الآمنة لبنك زراعات لإدخال بيانات بطاقتك."
+                    : locale === "tr"
+                      ? "Kart bilgilerinizi girmek için Ziraat Bankası'nın güvenli ödeme sayfasına yönlendirileceksiniz."
+                      : "You will be redirected to Ziraat Bank's secure payment page to enter your card details."}
+                </div>
+              )}
+
+              {cardOnSite && (
               <div className="rounded-2xl border border-sand/40 bg-card p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-brown">
@@ -529,6 +577,7 @@ export function CheckoutSection({ selection }: Props) {
                       : "Payment is securely processed via the local bank gateway."}
                 </p>
               </div>
+              )}
             </div>
           )}
 
@@ -559,7 +608,7 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
-                disabled={paying || !captchaToken || !cardFormValid}
+                disabled={paying || !captchaToken || (cardOnSite && !cardFormValid)}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
