@@ -146,15 +146,25 @@ export function CheckoutSection({ selection }: Props) {
     setStep(2);
   };
 
+  const cardNumberValid = isValidCardNumber(cardNumber);
+  const cardExpiryValid = isValidExpiry(cardExpiry);
+  const cardCvcValid = isValidCvc(cardCvc, cardBrand);
+  const cardFormValid = cardNumberValid && cardExpiryValid && cardCvcValid;
+
+  const clearError = (key: string) =>
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
+
   const validateCard = () => {
     const e: Record<string, string> = {};
-    if (cardHolder.trim().length < 2)
-      e.cc_name = locale === "ar" ? "أدخل اسم حامل البطاقة" : locale === "tr" ? "Kart sahibi adı" : "Cardholder name";
-    if (!isValidCardNumber(cardNumber))
+    if (!cardNumberValid)
       e.cc_number = locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number";
-    if (!isValidExpiry(cardExpiry))
+    if (!cardExpiryValid)
       e.cc_exp = locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry";
-    if (!isValidCvc(cardCvc, cardBrand))
+    if (!cardCvcValid)
       e.cc_cvc = "CVC";
     setErrors((prev) => ({ ...prev, ...e }));
     return Object.keys(e).length === 0;
@@ -190,7 +200,7 @@ export function CheckoutSection({ selection }: Props) {
           captchaToken,
           card: {
             number: digits,
-            holder: cardHolder.trim(),
+            holder: cardHolder.trim() || "CARDHOLDER",
             expMonth: parseInt(mm, 10),
             expYear: 2000 + parseInt(yy, 10),
             cvc: cardCvc.replace(/\D/g, ""),
@@ -249,7 +259,7 @@ export function CheckoutSection({ selection }: Props) {
                   id="name"
                   placeholder={locale === "ar" ? "اكتب اسمك الكامل" : "Your full name"}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); if (e.target.value.trim().length >= 2) clearError("name"); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
@@ -263,7 +273,7 @@ export function CheckoutSection({ selection }: Props) {
                   type="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) clearError("email"); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
@@ -305,7 +315,7 @@ export function CheckoutSection({ selection }: Props) {
                     inputMode="numeric"
                     placeholder="5XX XXX XX XX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                    onChange={(e) => { const v = e.target.value.replace(/[^\d\s]/g, ""); setPhone(v); clearError("phone"); }}
                     className="h-12 flex-1 rounded-xl bg-cream-dark/60 text-left"
                   />
                 </div>
@@ -349,7 +359,7 @@ export function CheckoutSection({ selection }: Props) {
                 <div className="grid gap-4">
                   <div>
                     <Label htmlFor="cc-name" className="text-brown-mid">
-                      {locale === "ar" ? "الاسم على البطاقة" : locale === "tr" ? "Kart Üzerindeki İsim" : "Cardholder Name"}
+                      {locale === "ar" ? "الاسم على البطاقة (اختياري)" : locale === "tr" ? "Kart Üzerindeki İsim (opsiyonel)" : "Cardholder Name (optional)"}
                     </Label>
                     <Input
                       id="cc-name"
@@ -359,7 +369,6 @@ export function CheckoutSection({ selection }: Props) {
                       onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
                       className="mt-2 h-12 rounded-xl bg-cream-dark/60 uppercase"
                     />
-                    {errors.cc_name && <p className="mt-1 text-xs text-destructive">{errors.cc_name}</p>}
                   </div>
 
                   <div>
@@ -377,7 +386,9 @@ export function CheckoutSection({ selection }: Props) {
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "");
                           const brand = detectCardBrand(digits);
-                          setCardNumber(formatCardNumber(digits, brand));
+                          const formatted = formatCardNumber(digits, brand);
+                          setCardNumber(formatted);
+                          if (isValidCardNumber(formatted)) clearError("cc_number");
                         }}
                         className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
@@ -405,6 +416,7 @@ export function CheckoutSection({ selection }: Props) {
                           let v = e.target.value.replace(/\D/g, "").slice(0, 4);
                           if (v.length >= 3) v = `${v.slice(0, 2)} / ${v.slice(2)}`;
                           setCardExpiry(v);
+                          if (isValidExpiry(v)) clearError("cc_exp");
                         }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
@@ -423,7 +435,11 @@ export function CheckoutSection({ selection }: Props) {
                         placeholder="123"
                         maxLength={cardBrand === "amex" ? 4 : 3}
                         value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          setCardCvc(v);
+                          if (isValidCvc(v, cardBrand)) clearError("cc_cvc");
+                        }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
                       {errors.cc_cvc && <p className="mt-1 text-xs text-destructive">{errors.cc_cvc}</p>}
@@ -469,7 +485,7 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
-                disabled={paying || !captchaToken}
+                disabled={paying || !captchaToken || !cardFormValid}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
