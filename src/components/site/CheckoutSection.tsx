@@ -7,10 +7,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/pricing";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
+
+const COUNTRIES = [
+  { code: "TR", flag: "🇹🇷", dial: "+90", min: 10, max: 10 },
+  { code: "SA", flag: "🇸🇦", dial: "+966", min: 9, max: 9 },
+  { code: "AE", flag: "🇦🇪", dial: "+971", min: 9, max: 9 },
+  { code: "EG", flag: "🇪🇬", dial: "+20", min: 10, max: 10 },
+  { code: "JO", flag: "🇯🇴", dial: "+962", min: 9, max: 9 },
+  { code: "KW", flag: "🇰🇼", dial: "+965", min: 8, max: 8 },
+  { code: "QA", flag: "🇶🇦", dial: "+974", min: 8, max: 8 },
+  { code: "BH", flag: "🇧🇭", dial: "+973", min: 8, max: 8 },
+  { code: "OM", flag: "🇴🇲", dial: "+968", min: 8, max: 8 },
+  { code: "PS", flag: "🇵🇸", dial: "+970", min: 9, max: 9 },
+  { code: "LB", flag: "🇱🇧", dial: "+961", min: 7, max: 8 },
+  { code: "SY", flag: "🇸🇾", dial: "+963", min: 9, max: 9 },
+  { code: "IQ", flag: "🇮🇶", dial: "+964", min: 10, max: 10 },
+  { code: "YE", flag: "🇾🇪", dial: "+967", min: 9, max: 9 },
+  { code: "GB", flag: "🇬🇧", dial: "+44", min: 10, max: 10 },
+  { code: "US", flag: "🇺🇸", dial: "+1", min: 10, max: 10 },
+];
 
 type Props = {
   selection: TrackSelection | null;
@@ -27,6 +53,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
+  const [dialCode, setDialCode] = useState("+90");
   const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,10 +67,23 @@ export function CheckoutSection({ selection }: Props) {
     return `${base} | ${formatPrice(selection.unitPrice, locale)}`;
   }, [selection, locale, t]);
 
+  const country = COUNTRIES.find((c) => c.dial === dialCode) ?? COUNTRIES[0];
+
   const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length > 0) {
+      if (digits.length < country.min || digits.length > country.max) {
+        e.phone =
+          locale === "ar"
+            ? `رقم الهاتف يجب أن يكون بين ${country.min} و ${country.max} رقمًا`
+            : locale === "tr"
+              ? `Telefon ${country.min}-${country.max} hane olmalı`
+              : `Phone must be ${country.min}-${country.max} digits`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -93,33 +133,6 @@ export function CheckoutSection({ selection }: Props) {
           {step === 1 && (
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div>
-                <Label htmlFor="qty" className="text-brown-mid">
-                  {t("form.quantity")}
-                </Label>
-                <Input
-                  id="qty"
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone" className="text-brown-mid">
-                  {t("form.phone")}
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="+90 555 555 5555"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                />
-              </div>
-              <div>
                 <Label htmlFor="name" className="text-brown-mid">
                   {t("form.name")} *
                 </Label>
@@ -145,6 +158,49 @@ export function CheckoutSection({ selection }: Props) {
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+              </div>
+              <div>
+                <Label htmlFor="qty" className="text-brown-mid">
+                  {t("form.quantity")}
+                </Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone" className="text-brown-mid">
+                  {t("form.phone")}
+                </Label>
+                <div className="mt-2 flex gap-2">
+                  <Select value={dialCode} onValueChange={setDialCode}>
+                    <SelectTrigger className="h-12 w-[110px] shrink-0 rounded-xl bg-cream-dark/60">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.dial}>
+                          <span className="me-2">{c.flag}</span>
+                          {c.dial}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="5XX XXX XX XX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                    className="h-12 flex-1 rounded-xl bg-cream-dark/60"
+                  />
+                </div>
+                {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="intent" className="text-brown-mid">
