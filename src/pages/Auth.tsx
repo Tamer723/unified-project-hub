@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +48,20 @@ export default function Auth() {
     if (error) return toast.error(error.message);
     toast.success("تم إنشاء الحساب");
     navigate("/admin");
+  };
+
+  const handleForgot = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email"));
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success("أرسلنا رابط استعادة كلمة المرور إلى بريدك");
+    setForgotOpen(false);
   };
 
   return (
@@ -71,6 +94,33 @@ export default function Auth() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "..." : "دخول"}
               </Button>
+              <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="block w-full text-center text-sm text-primary hover:underline"
+                  >
+                    نسيت كلمة المرور؟
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>استعادة كلمة المرور</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleForgot} className="space-y-4">
+                    <div>
+                      <Label htmlFor="fp-email">البريد</Label>
+                      <Input id="fp-email" name="email" type="email" required />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        سنرسل رابطاً لإعادة تعيين كلمة المرور.
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={forgotLoading}>
+                      {forgotLoading ? "..." : "إرسال الرابط"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </form>
           </TabsContent>
 

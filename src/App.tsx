@@ -9,6 +9,8 @@ import Failed from "./pages/Failed.tsx";
 import Payment3DSMock from "./pages/Payment3DSMock.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
+import Account from "./pages/admin/Account.tsx";
 import RequireAdmin from "./components/admin/RequireAdmin.tsx";
 import AdminLayout from "./components/admin/AdminLayout.tsx";
 import Overview from "./pages/admin/Overview.tsx";
@@ -29,6 +31,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/success" element={<Success />} />
           <Route path="/failed" element={<Failed />} />
           <Route path="/payment/3ds-mock" element={<Payment3DSMock />} />
@@ -45,6 +48,7 @@ const App = () => (
             <Route path="products" element={<Products />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="users" element={<Users />} />
+            <Route path="account" element={<Account />} />
             <Route path="audit" element={<Audit />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
