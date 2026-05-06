@@ -1,7 +1,7 @@
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { StatCard, statusBadge, pctChange } from "@/components/admin/ui";
 import { Card } from "@/components/ui/card";
-import { DollarSign, TrendingUp, ShoppingCart, AlertTriangle, CheckCircle2, Beef } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Beef } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
+  Cell,
 } from "recharts";
 import { Loader2 } from "lucide-react";
 
@@ -59,7 +60,6 @@ export default function Overview() {
           hint={`${stats.pending} معلّقة`}
           icon={AlertTriangle}
         />
-        <StatCard label="متوسط الطلب" value={fmtUsd(Math.round(stats.aov))} icon={ShoppingCart} />
         <StatCard label="إجمالي الأضاحي" value={String(stats.animals)} icon={Beef} />
       </div>
 
@@ -93,6 +93,58 @@ export default function Overview() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold mb-4">الأضاحي والتكلفة حسب المسار (آخر 30 يوماً)</h3>
+        {stats.tracks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">لا توجد طلبات مدفوعة بعد.</p>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.tracks} layout="vertical" margin={{ left: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="title" tick={{ fontSize: 11 }} width={120} />
+                  <Tooltip formatter={(v: number) => [`${v} أضحية`, "العدد"]} />
+                  <Bar dataKey="animals" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]}>
+                    {stats.tracks.map((_, i) => (
+                      <Cell key={i} fill={`hsl(var(--primary) / ${1 - i * 0.18})`} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground border-b">
+                    <th className="text-start py-2 font-medium">المسار</th>
+                    <th className="text-end py-2 font-medium">الأضاحي</th>
+                    <th className="text-end py-2 font-medium">الطلبات</th>
+                    <th className="text-end py-2 font-medium">USD</th>
+                    <th className="text-end py-2 font-medium">TRY</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.tracks.map((t) => (
+                    <tr key={t.id} className="border-b last:border-0">
+                      <td className="py-2">
+                        <div className="font-medium">{t.title}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono">{t.code}</div>
+                      </td>
+                      <td className="py-2 text-end font-bold">{t.animals}</td>
+                      <td className="py-2 text-end text-muted-foreground">{t.orders}</td>
+                      <td className="py-2 text-end font-mono">{t.usd ? fmtUsd(t.usd) : "—"}</td>
+                      <td className="py-2 text-end font-mono">{t.try ? fmtTry(t.try) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
