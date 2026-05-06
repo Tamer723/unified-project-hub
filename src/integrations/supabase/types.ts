@@ -135,6 +135,7 @@ export type Database = {
           id: string
           price: number
           product_id: string
+          weight_kg: number | null
         }
         Insert: {
           active?: boolean
@@ -145,6 +146,7 @@ export type Database = {
           id?: string
           price: number
           product_id: string
+          weight_kg?: number | null
         }
         Update: {
           active?: boolean
@@ -155,6 +157,7 @@ export type Database = {
           id?: string
           price?: number
           product_id?: string
+          weight_kg?: number | null
         }
         Relationships: [
           {

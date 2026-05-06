@@ -21,13 +21,24 @@ export const ANIMAL_CODES: AnimalCode[] = ["sheep", "cow_share"];
 
 /** Static fallback if DB fetch fails. Mirrors product_price_matrix seed. */
 export const FALLBACK_MATRIX: Record<CountryCode, Record<AnimalCode, number>> = {
-  JM: { sheep: 285, cow_share: 285 },
-  WB: { sheep: 250, cow_share: 250 },
-  LB: { sheep: 230, cow_share: 200 },
-  SY: { sheep: 165, cow_share: 145 },
-  SD: { sheep: 115, cow_share: 115 },
-  YE: { sheep: 175, cow_share: 155 },
-  BD: { sheep: 195, cow_share: 175 },
+  JM: { sheep: 850, cow_share: 530 },
+  WB: { sheep: 750, cow_share: 500 },
+  LB: { sheep: 350, cow_share: 345 },
+  SY: { sheep: 320, cow_share: 360 },
+  SD: { sheep: 180, cow_share: 120 },
+  YE: { sheep: 130, cow_share: 120 },
+  BD: { sheep: 175, cow_share: 115 },
+};
+
+/** Static fallback for weight (kg) if DB fetch fails. */
+export const FALLBACK_WEIGHTS: Record<CountryCode, Record<AnimalCode, number>> = {
+  JM: { sheep: 50, cow_share: 350 },
+  WB: { sheep: 50, cow_share: 350 },
+  LB: { sheep: 40, cow_share: 350 },
+  SY: { sheep: 42, cow_share: 350 },
+  SD: { sheep: 23, cow_share: 200 },
+  YE: { sheep: 23, cow_share: 200 },
+  BD: { sheep: 20, cow_share: 150 },
 };
 
 export const TRACK_PRICES = {

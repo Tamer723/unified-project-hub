@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { formatPrice, COUNTRY_CODES, ANIMAL_CODES, type CountryCode, type AnimalCode } from "@/lib/pricing";
-import { resolveTrackPrice } from "@/hooks/usePricing";
+import { resolveTrackPrice, resolveTrackWeight } from "@/hooks/usePricing";
 import type { Locale } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,9 @@ export function TrackCard({
     : (t(`${id}.features`, { returnObjects: true }) as string[]);
 
   const unitPrice = resolveTrackPrice(id, pricingData, country, animal);
+  const weightKg = id === "track3" && country && animal
+    ? resolveTrackWeight(pricingData, country, animal)
+    : null;
 
   const handleChoose = () => {
     onChoose({
@@ -133,7 +136,9 @@ export function TrackCard({
               </SelectContent>
             </Select>
             <p className="col-span-2 text-[11px] text-brown-mid text-center">
-              {t("track3.weight_note")}
+              {weightKg != null
+                ? t("track3.weight_value", { kg: weightKg })
+                : t("track3.weight_note")}
             </p>
           </div>
         ) : (
