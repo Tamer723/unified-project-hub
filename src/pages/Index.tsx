@@ -32,8 +32,8 @@ const Index = () => {
         <Hero />
         <WhySection />
         <Tracks onSelect={handleSelect} />
-        <CheckoutSection selection={selection} onChangeSelection={setSelection} />
         <TrustSection />
+        <CheckoutSection selection={selection} onChangeSelection={setSelection} />
         <Faq />
       </main>
       <Footer />
