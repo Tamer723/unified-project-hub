@@ -1,7 +1,7 @@
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { StatCard, statusBadge, pctChange } from "@/components/admin/ui";
 import { Card } from "@/components/ui/card";
-import { DollarSign, TrendingUp, ShoppingCart, AlertTriangle, CheckCircle2, Beef } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Beef } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
+  Cell,
 } from "recharts";
 import { Loader2 } from "lucide-react";
 
