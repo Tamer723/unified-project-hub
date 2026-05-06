@@ -136,7 +136,9 @@ export function TrackCard({
               </SelectContent>
             </Select>
             <p className="col-span-2 text-[11px] text-brown-mid text-center">
-              {t("track3.weight_note")}
+              {weightKg != null
+                ? t("track3.weight_value", { kg: weightKg })
+                : t("track3.weight_note")}
             </p>
           </div>
         ) : (
