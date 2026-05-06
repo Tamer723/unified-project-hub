@@ -123,6 +123,12 @@ Deno.serve(async (req) => {
         .eq("active", true)
         .maybeSingle();
       resolvedProduct = tp?.id ?? null;
+      if (!resolvedProduct) {
+        return new Response(JSON.stringify({ responseCode: "400", responseMessage: `Unknown track: ${track_code}` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
     let serverUnitPrice: number | null = null;
     let serverCurrency: string = currency;
@@ -161,28 +167,18 @@ Deno.serve(async (req) => {
       }
       if (serverUnitPrice == null) {
         if (!resolvedProduct) {
-          const { data: p } = await supabase
-            .from("products")
-            .select("id")
-            .eq("active", true)
-            .order("display_order", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-          resolvedProduct = p?.id ?? null;
-        }
-        if (!resolvedProduct) {
-          return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
-            status: 500,
+          return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product is required" }), {
+            status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         const { data: prod } = await supabase
           .from("products")
-          .select("base_price, currency, active")
+          .select("base_price, currency, active, code")
           .eq("id", resolvedProduct)
           .eq("active", true)
           .maybeSingle();
-        if (!prod) {
+        if (!prod || !prod.code) {
           return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
