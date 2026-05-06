@@ -7,6 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Cloudflare Turnstile test secret key (always passes). Replace via TURNSTILE_SECRET_KEY env var for production.
+const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
+
 const Body = z.object({
   donor: z.object({
     name: z.string().min(2).max(80),
@@ -19,6 +22,7 @@ const Body = z.object({
   currency: z.enum(["USD", "TRY"]),
   product_id: z.string().uuid().optional().nullable(),
   matrix_id: z.string().uuid().optional().nullable(),
+  captchaToken: z.string().min(1).max(2048),
   card: z.object({
     number: z.string().min(13).max(25),
     holder: z.string().min(2).max(80),
@@ -34,6 +38,35 @@ function detectBrand(d: string): string {
   if (/^(5[1-5]|2(2(2[1-9]|[3-9]\d)|[3-6]\d{2}|7([01]\d|20)))/.test(d)) return "mastercard";
   if (/^9792/.test(d)) return "troy";
   return "unknown";
+}
+
+function luhnOk(d: string): boolean {
+  let sum = 0, dbl = false;
+  for (let i = d.length - 1; i >= 0; i--) {
+    let n = parseInt(d[i], 10);
+    if (dbl) { n *= 2; if (n > 9) n -= 9; }
+    sum += n; dbl = !dbl;
+  }
+  return sum % 10 === 0;
+}
+
+async function verifyTurnstile(token: string, ip: string | null): Promise<boolean> {
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY") || TURNSTILE_TEST_SECRET;
+  const form = new URLSearchParams();
+  form.append("secret", secret);
+  form.append("response", token);
+  if (ip) form.append("remoteip", ip);
+  try {
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: form,
+    });
+    const j = await r.json();
+    return j.success === true;
+  } catch (e) {
+    console.error("turnstile verify failed:", e);
+    return false;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -53,33 +86,86 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { donor, intention, quantity, unit_price, currency, product_id, matrix_id, card } = parsed.data;
-    const digits = card.number.replace(/\D/g, "");
-    const last4 = digits.slice(-4);
-    const bin = digits.slice(0, 6);
-    const brand = detectBrand(digits);
+    const { donor, intention, quantity, currency, product_id, matrix_id, card, captchaToken } = parsed.data;
 
-    // Resolve product_id if not provided (use first active product as fallback for mock).
-    let resolvedProduct = product_id;
-    if (!resolvedProduct) {
-      const { data: p } = await supabase
-        .from("products")
-        .select("id")
-        .eq("active", true)
-        .order("display_order", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      resolvedProduct = p?.id ?? null;
-    }
-    if (!resolvedProduct) {
-      return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
-        status: 500,
+    // 1. CAPTCHA verification
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    const captchaOk = await verifyTurnstile(captchaToken, ip);
+    if (!captchaOk) {
+      return new Response(JSON.stringify({ responseCode: "403", responseMessage: "CAPTCHA verification failed" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // 2. Card validation (Luhn)
+    const digits = card.number.replace(/\D/g, "");
+    if (!luhnOk(digits)) {
+      return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Invalid card number" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const last4 = digits.slice(-4);
+    const bin = digits.slice(0, 6);
+    const brand = detectBrand(digits);
+
+    // 3. Server-side price resolution (NEVER trust client unit_price)
+    let resolvedProduct = product_id;
+    let serverUnitPrice: number | null = null;
+    let serverCurrency: string = currency;
+
+    if (matrix_id) {
+      const { data: m } = await supabase
+        .from("product_price_matrix")
+        .select("price, currency, product_id, active")
+        .eq("id", matrix_id)
+        .eq("active", true)
+        .maybeSingle();
+      if (!m) {
+        return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Invalid pricing" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      serverUnitPrice = m.price;
+      serverCurrency = m.currency;
+      resolvedProduct = m.product_id;
+    } else {
+      if (!resolvedProduct) {
+        const { data: p } = await supabase
+          .from("products")
+          .select("id")
+          .eq("active", true)
+          .order("display_order", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        resolvedProduct = p?.id ?? null;
+      }
+      if (!resolvedProduct) {
+        return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: prod } = await supabase
+        .from("products")
+        .select("base_price, currency, active")
+        .eq("id", resolvedProduct)
+        .eq("active", true)
+        .maybeSingle();
+      if (!prod) {
+        return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      serverUnitPrice = prod.base_price;
+      serverCurrency = prod.currency;
+    }
+
     const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-    const total = unit_price * quantity;
+    const total = serverUnitPrice! * quantity;
     const expires_at = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
     const { data: order, error: insErr } = await supabase
@@ -92,9 +178,9 @@ Deno.serve(async (req) => {
         donor_phone: donor.phone ?? null,
         quantity,
         intention: intention ?? null,
-        unit_price,
+        unit_price: serverUnitPrice,
         total_amount: total,
-        currency,
+        currency: serverCurrency,
         status: "awaiting_3ds",
         provider: "mock_ziraat",
         provider_txn_id: txnId,
@@ -105,7 +191,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (insErr || !order) {
-      console.error("insert error:", insErr);
+      console.error("insert error:", insErr?.message);
       return new Response(JSON.stringify({ responseCode: "500", responseMessage: "Failed to create order" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -122,12 +208,12 @@ Deno.serve(async (req) => {
         transactionId: txnId,
         threeDSUrl,
         amount: total,
-        currency,
+        currency: serverCurrency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error(err);
+    console.error("init error:", (err as Error).message);
     return new Response(JSON.stringify({ responseCode: "500", responseMessage: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
