@@ -109,17 +109,24 @@ export function CheckoutSection({ selection }: Props) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   type ProviderId = "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
-  const [activeProvider, setActiveProvider] = useState<ProviderId>("mock");
+  const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const [threeDSHtml, setThreeDSHtml] = useState<string | null>(null);
 
+  const fetchProvider = async (): Promise<ProviderId | null> => {
+    const { data } = await supabase.rpc("get_active_payment_provider");
+    const row = Array.isArray(data) ? data[0] : data;
+    const p = (row?.active_provider as ProviderId | undefined) ?? null;
+    if (p) setActiveProvider(p);
+    return p;
+  };
+
   useEffect(() => {
-    supabase.rpc("get_active_payment_provider").then(({ data }) => {
-      const row = Array.isArray(data) ? data[0] : data;
-      if (row?.active_provider) setActiveProvider(row.active_provider as ProviderId);
-    });
+    fetchProvider();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cardOnSite = activeProvider === "mock" || activeProvider === "nestpay_3d" || activeProvider === "iyzico_3ds";
+  const providerReady = activeProvider !== null;
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
@@ -217,7 +224,10 @@ export function CheckoutSection({ selection }: Props) {
       toast.error(t("checkout.select_first"));
       return;
     }
-    if (cardOnSite && !validateCard()) return;
+    // Always re-fetch active provider before paying to avoid stale provider (e.g. after returning from success page)
+    const currentProvider = (await fetchProvider()) ?? activeProvider;
+    const currentCardOnSite = currentProvider === "mock" || currentProvider === "nestpay_3d" || currentProvider === "iyzico_3ds";
+    if (currentCardOnSite && !validateCard()) return;
     if (!captchaToken) {
       toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
       return;
@@ -225,7 +235,7 @@ export function CheckoutSection({ selection }: Props) {
 
     setPaying(true);
     try {
-      const cardPayload = cardOnSite
+      const cardPayload = currentCardOnSite
         ? (() => {
             const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
             const digits = cardNumber.replace(/\D/g, "");
@@ -616,7 +626,7 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
-                disabled={paying || !captchaToken || (cardOnSite && !cardFormValid)}
+                disabled={paying || !captchaToken || !providerReady || (cardOnSite && !cardFormValid)}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
