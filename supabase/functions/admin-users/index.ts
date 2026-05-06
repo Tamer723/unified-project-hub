@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+const VALID_ROLES = ["admin", "moderator", "viewer"] as const;
+type Role = typeof VALID_ROLES[number];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -22,7 +25,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller is admin
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -55,26 +57,66 @@ Deno.serve(async (req) => {
     } catch {
       body = null;
     }
-    const { action, user_id } = body ?? {};
+    const { action, user_id, role, email, redirectTo } = body ?? {};
 
     if (req.method === "POST" && action) {
+      // grant role
+      if (action === "grant_role" && user_id && VALID_ROLES.includes(role)) {
+        const { error } = await admin.from("user_roles").insert({ user_id, role });
+        if (error && !error.message.includes("duplicate")) throw error;
+        return ok();
+      }
+
+      // revoke role
+      if (action === "revoke_role" && user_id && VALID_ROLES.includes(role)) {
+        // Prevent removing last admin
+        if (role === "admin") {
+          const { data: admins } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+          if ((admins?.length ?? 0) <= 1) {
+            return new Response(JSON.stringify({ error: "لا يمكن إزالة آخر مسؤول" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+        const { error } = await admin.from("user_roles").delete().eq("user_id", user_id).eq("role", role);
+        if (error) throw error;
+        return ok();
+      }
+
+      // invite user
+      if (action === "invite_user" && email && VALID_ROLES.includes(role)) {
+        const { data: invited, error: iErr } = await admin.auth.admin.inviteUserByEmail(email, {
+          redirectTo: redirectTo ?? undefined,
+        });
+        if (iErr) throw iErr;
+        const newId = invited?.user?.id;
+        if (newId) {
+          const { error: rErr } = await admin.from("user_roles").insert({ user_id: newId, role });
+          if (rErr && !rErr.message.includes("duplicate")) throw rErr;
+        }
+        return ok({ user_id: newId });
+      }
+
+      // legacy aliases
       if (action === "grant_admin" && user_id) {
         const { error } = await admin.from("user_roles").insert({ user_id, role: "admin" });
         if (error && !error.message.includes("duplicate")) throw error;
-      } else if (action === "revoke_admin" && user_id) {
+        return ok();
+      }
+      if (action === "revoke_admin" && user_id) {
         const { error } = await admin.from("user_roles").delete().eq("user_id", user_id).eq("role", "admin");
         if (error) throw error;
-      } else {
-        return new Response(JSON.stringify({ error: "invalid action" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok();
       }
-      return new Response(JSON.stringify({ ok: true }), {
+
+      return new Response(JSON.stringify({ error: "invalid action" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // list users
     const { data: list, error: listErr } = await admin.auth.admin.listUsers({ perPage: 200 });
     if (listErr) throw listErr;
     const { data: roles } = await admin.from("user_roles").select("user_id, role");
@@ -104,3 +146,9 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+function ok(extra: Record<string, unknown> = {}) {
+  return new Response(JSON.stringify({ ok: true, ...extra }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
