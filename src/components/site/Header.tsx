@@ -6,8 +6,8 @@ import { CountdownBar } from "./CountdownBar";
 export function Header() {
   const { t } = useTranslation();
   const links = [
-    { href: "#tracks", k: "tracks" },
     { href: "#why", k: "why" },
+    { href: "#tracks", k: "tracks" },
     { href: "#trust", k: "trust" },
     { href: "#faq", k: "faq" },
   ];
