@@ -11,6 +11,14 @@ import { Download, Loader2 } from "lucide-react";
 const fmt = (n: number, c: string) =>
   c === "USD" ? `$${n.toLocaleString("en-US")}` : `${n.toLocaleString("tr-TR")} ₺`;
 
+const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
+const trackVariant = (o: Order) => {
+  if (o.product_price_matrix) {
+    return `${o.product_price_matrix.country_code} · ${o.product_price_matrix.animal_code}`;
+  }
+  return null;
+};
+
 export default function Orders() {
   const { data: orders, isLoading } = useOrders();
   const [search, setSearch] = useState("");
@@ -33,9 +41,23 @@ export default function Orders() {
   }, [orders, status, search]);
 
   const exportCsv = () => {
-    const headers = ["id", "created_at", "donor_name", "donor_email", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
+    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "variant", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
     const rows = filtered.map((o) =>
-      [o.id, o.created_at, o.donor_name, o.donor_email, o.quantity, o.unit_price, o.total_amount, o.currency, o.status, o.provider_txn_id ?? ""]
+      [
+        o.id,
+        o.created_at,
+        o.donor_name,
+        o.donor_email,
+        o.products?.code ?? "",
+        trackLabel(o),
+        trackVariant(o) ?? "",
+        o.quantity,
+        o.unit_price,
+        o.total_amount,
+        o.currency,
+        o.status,
+        o.provider_txn_id ?? "",
+      ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -95,7 +117,7 @@ export default function Orders() {
                 <tr className="text-xs text-muted-foreground border-b">
                   <th className="text-start py-2 font-medium">التاريخ</th>
                   <th className="text-start py-2 font-medium">المتبرع</th>
-                  <th className="text-start py-2 font-medium">البريد</th>
+                  <th className="text-start py-2 font-medium">المسار</th>
                   <th className="text-start py-2 font-medium">الكمية</th>
                   <th className="text-start py-2 font-medium">المبلغ</th>
                   <th className="text-start py-2 font-medium">الحالة</th>
@@ -113,8 +135,16 @@ export default function Orders() {
                     <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(o.created_at).toLocaleString("ar")}
                     </td>
-                    <td className="py-2">{o.donor_name}</td>
-                    <td className="py-2 text-xs">{o.donor_email}</td>
+                    <td className="py-2">
+                      <div>{o.donor_name}</div>
+                      <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium">{trackLabel(o)}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        {o.products?.code ?? "—"}{trackVariant(o) ? ` · ${trackVariant(o)}` : ""}
+                      </div>
+                    </td>
                     <td className="py-2">{o.quantity}</td>
                     <td className="py-2 font-mono">{fmt(o.total_amount, o.currency)}</td>
                     <td className="py-2"><span className={statusBadge(o.status)}>{o.status}</span></td>
@@ -137,6 +167,13 @@ export default function Orders() {
             <div className="mt-6 space-y-3 text-sm">
               <Row k="ID" v={active.id} />
               <Row k="الحالة" v={active.status} />
+              <Row k="المسار" v={`${trackLabel(active)}${active.products?.code ? ` (${active.products.code})` : ""}`} />
+              {active.product_price_matrix && (
+                <>
+                  <Row k="الدولة" v={active.product_price_matrix.country_code} />
+                  <Row k="الحيوان" v={active.product_price_matrix.animal_code} />
+                </>
+              )}
               <Row k="المتبرع" v={active.donor_name} />
               <Row k="البريد" v={active.donor_email} />
               <Row k="الهاتف" v={active.donor_phone ?? "—"} />

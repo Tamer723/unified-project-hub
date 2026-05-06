@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TrackCard, type TrackId, type TrackSelection } from "./TrackCard";
-import { usePricing } from "@/hooks/usePricing";
+import { usePricing, isTrackActive } from "@/hooks/usePricing";
 import type { CountryCode, AnimalCode } from "@/lib/pricing";
 import type { Locale } from "@/lib/constants";
 
@@ -28,20 +28,24 @@ export function Tracks({ onSelect }: Props) {
           <p className="mt-3 text-brown-mid">{t("tracks.subtitle")}</p>
         </div>
         <div className="grid items-stretch gap-6 md:grid-cols-3">
-          {(["track1", "track2", "track3"] as TrackId[]).map((id) => (
-            <TrackCard
-              key={id}
-              id={id}
-              pricingData={data}
-              locale={locale}
-              popular={id === "track1"}
-              country={id === "track3" ? country : undefined}
-              animal={id === "track3" ? animal : undefined}
-              onCountryChange={setCountry}
-              onAnimalChange={setAnimal}
-              onChoose={onSelect}
-            />
-          ))}
+          {(["track1", "track2", "track3"] as TrackId[]).map((id) => {
+            const disabled = !isTrackActive(id, data);
+            return (
+              <TrackCard
+                key={id}
+                id={id}
+                pricingData={data}
+                locale={locale}
+                popular={id === "track1" && !disabled}
+                disabled={disabled}
+                country={id === "track3" ? country : undefined}
+                animal={id === "track3" ? animal : undefined}
+                onCountryChange={setCountry}
+                onAnimalChange={setAnimal}
+                onChoose={onSelect}
+              />
+            );
+          })}
         </div>
       </div>
     </section>

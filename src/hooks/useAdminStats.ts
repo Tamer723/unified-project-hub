@@ -18,6 +18,8 @@ export type Order = {
   failure_reason: string | null;
   card_meta: any;
   intention: string | null;
+  products?: { code: string | null; title_ar: string | null; title_en: string | null } | null;
+  product_price_matrix?: { country_code: string; animal_code: string } | null;
 };
 
 export function useOrders() {
@@ -27,11 +29,11 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select("*, products(code, title_ar, title_en), product_price_matrix(country_code, animal_code)")
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
-      return (data ?? []) as Order[];
+      return (data ?? []) as unknown as Order[];
     },
   });
 }

@@ -40,7 +40,8 @@
     "popular": "En Popüler",
     "choose": "Bu Yolu Seç",
     "from": "başlangıç",
-    "unit": "kurban başına"
+    "unit": "kurban başına",
+    "unavailable": "Şu anda mevcut değil"
   },
   "track1": {
     "title": "Birinci Yol",

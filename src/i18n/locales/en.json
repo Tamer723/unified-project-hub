@@ -40,7 +40,8 @@
     "popular": "Most Popular",
     "choose": "Select This Pathway",
     "from": "from",
-    "unit": "per sacrifice"
+    "unit": "per sacrifice",
+    "unavailable": "Currently unavailable"
   },
   "track1": {
     "title": "Pathway One",
