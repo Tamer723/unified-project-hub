@@ -137,12 +137,13 @@ Deno.serve(async (req) => {
 
       let path = "";
       let body: Record<string, unknown> = {};
+      const iyzLocale = lang === "tr" ? "tr" : "en";
       if (iyzToken) {
         path = "/payment/iyzipos/checkoutform/auth/ecom/detail/";
-        body = { locale: "tr", conversationId: iyzConvId, token: iyzToken };
+        body = { locale: iyzLocale, conversationId: iyzConvId, token: iyzToken };
       } else {
         path = "/payment/3dsecure/auth";
-        body = { locale: "tr", conversationId: iyzConvId, paymentId: iyzPaymentId, conversationData: params.conversationData || "" };
+        body = { locale: iyzLocale, conversationId: iyzConvId, paymentId: iyzPaymentId, conversationData: params.conversationData || "" };
       }
       const bodyStr = JSON.stringify(body);
       const randomKey = `${Date.now()}${Math.floor(Math.random() * 1e9)}`;
@@ -166,21 +167,22 @@ Deno.serve(async (req) => {
       const finalStatus = ok ? "paid" : "failed";
       const reason = ok ? null : (j.errorMessage || `iyzico verify failed (${j.status})`);
 
+      const prevMeta = (ordRow.metadata ?? {}) as Record<string, unknown>;
       await supabase.from("orders").update({
         status: finalStatus,
         failure_reason: reason,
         provider_txn_id: j.paymentId || iyzPaymentId || null,
-        metadata: { iyzico_verify: j, processed_at: new Date().toISOString() },
+        metadata: { ...prevMeta, iyzico_verify: j, processed_at: new Date().toISOString() },
       }).eq("id", iyzConvId).in("status", ["pending", "awaiting_3ds"]);
 
-      return redirect(`${origin}/${ok ? "success" : "failed"}?order=${iyzConvId}${ok ? "" : `&reason=${encodeURIComponent(reason || "failed")}`}`);
+      return redirect(appendLang(`${origin}/${ok ? "success" : "failed"}?order=${iyzConvId}${ok ? "" : `&reason=${encodeURIComponent(reason || "failed")}`}`));
     }
 
     // ===== NestPay callback (existing logic) =====
     const oid = params.oid || params.OrderId || params.orderid || "";
     if (!oid) {
       console.error("callback: missing oid", params);
-      return redirect(`${origin}/failed?reason=missing_oid`);
+      return redirect(appendLang(`${origin}/failed?reason=missing_oid`));
     }
 
     // Hash verification (only if storeKey configured AND HASH present)
@@ -222,10 +224,10 @@ Deno.serve(async (req) => {
       .select("id, status").eq("id", oid).maybeSingle();
     if (!order) {
       console.error("callback: order not found", oid);
-      return redirect(`${origin}/failed?reason=order_not_found`);
+      return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
     }
     if (order.status === "paid" || order.status === "failed") {
-      return redirect(`${origin}/${order.status === "paid" ? "success" : "failed"}`);
+      return redirect(appendLang(`${origin}/${order.status === "paid" ? "success" : "failed"}`));
     }
 
     await supabase.from("orders").update({
@@ -236,12 +238,12 @@ Deno.serve(async (req) => {
     }).eq("id", oid).in("status", ["pending", "awaiting_3ds"]);
 
     if (finalStatus === "paid") {
-      return redirect(`${origin}/success?order=${oid}`);
+      return redirect(appendLang(`${origin}/success?order=${oid}`));
     }
-    return redirect(`${origin}/failed?reason=${encodeURIComponent(failureReason || "failed")}`);
+    return redirect(appendLang(`${origin}/failed?reason=${encodeURIComponent(failureReason || "failed")}`));
 
   } catch (err) {
     console.error("callback error:", (err as Error).message);
-    return redirect(`${origin}/failed?reason=internal_error`);
+    return redirect(appendLang(`${origin}/failed?reason=internal_error`));
   }
 });
