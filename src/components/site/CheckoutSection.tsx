@@ -346,9 +346,13 @@ export function CheckoutSection({ selection }: Props) {
                     </Label>
                     <Input
                       id="cc-name"
+                      autoComplete="cc-name"
                       placeholder={locale === "ar" ? "كما يظهر على البطاقة" : "JOHN DOE"}
-                      className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                      className="mt-2 h-12 rounded-xl bg-cream-dark/60 uppercase"
                     />
+                    {errors.cc_name && <p className="mt-1 text-xs text-destructive">{errors.cc_name}</p>}
                   </div>
 
                   <div>
