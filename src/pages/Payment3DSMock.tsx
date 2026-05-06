@@ -14,13 +14,13 @@ export default function Payment3DSMock() {
   const locale = (i18n.language?.split("-")[0] || "ar") as "ar" | "tr" | "en";
   const orderId = params.get("orderId") ?? "";
   const txn = params.get("txn") ?? "";
+  const last4 = params.get("last4") ?? "····";
+  const amount = Number(params.get("amount") ?? 0);
+  const currency = params.get("currency") ?? "USD";
 
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
-  const [meta, setMeta] = useState<CardMeta>({});
-  const [amount, setAmount] = useState<number | null>(null);
-  const [currency, setCurrency] = useState<string>("USD");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const t = useMemo(() => {
@@ -71,31 +71,7 @@ export default function Payment3DSMock() {
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (!orderId) {
-      navigate("/failed");
-      return;
-    }
-    (async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("card_meta, total_amount, currency, status")
-        .eq("id", orderId)
-        .maybeSingle();
-      if (error || !data) {
-        navigate("/failed");
-        return;
-      }
-      if (data.status !== "awaiting_3ds") {
-        navigate(data.status === "paid" ? "/success" : "/failed");
-        return;
-      }
-      setMeta((data.card_meta as CardMeta) ?? {});
-      setAmount(data.total_amount);
-      setCurrency(data.currency);
-    })();
+    if (!orderId) navigate("/failed");
   }, [orderId, navigate]);
 
   useEffect(() => {
