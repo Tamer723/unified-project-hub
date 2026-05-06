@@ -133,33 +133,6 @@ export function CheckoutSection({ selection }: Props) {
           {step === 1 && (
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div>
-                <Label htmlFor="qty" className="text-brown-mid">
-                  {t("form.quantity")}
-                </Label>
-                <Input
-                  id="qty"
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone" className="text-brown-mid">
-                  {t("form.phone")}
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="+90 555 555 5555"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                />
-              </div>
-              <div>
                 <Label htmlFor="name" className="text-brown-mid">
                   {t("form.name")} *
                 </Label>
@@ -185,6 +158,49 @@ export function CheckoutSection({ selection }: Props) {
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+              </div>
+              <div>
+                <Label htmlFor="qty" className="text-brown-mid">
+                  {t("form.quantity")}
+                </Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone" className="text-brown-mid">
+                  {t("form.phone")}
+                </Label>
+                <div className="mt-2 flex gap-2">
+                  <Select value={dialCode} onValueChange={setDialCode}>
+                    <SelectTrigger className="h-12 w-[110px] shrink-0 rounded-xl bg-cream-dark/60">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.dial}>
+                          <span className="me-2">{c.flag}</span>
+                          {c.dial}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="5XX XXX XX XX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                    className="h-12 flex-1 rounded-xl bg-cream-dark/60"
+                  />
+                </div>
+                {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="intent" className="text-brown-mid">
