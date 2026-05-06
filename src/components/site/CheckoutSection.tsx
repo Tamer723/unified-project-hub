@@ -263,6 +263,7 @@ export function CheckoutSection({ selection }: Props) {
                   placeholder={locale === "ar" ? "اكتب اسمك الكامل" : "Your full name"}
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (e.target.value.trim().length >= 2) clearError("name"); }}
+                  onBlur={() => { if (name.trim().length > 0 && name.trim().length < 2) setErrors((p) => ({ ...p, name: t("form.errors.name") })); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
@@ -277,6 +278,7 @@ export function CheckoutSection({ selection }: Props) {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) clearError("email"); }}
+                  onBlur={() => { if (email.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErrors((p) => ({ ...p, email: t("form.errors.email") })); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
@@ -299,15 +301,28 @@ export function CheckoutSection({ selection }: Props) {
                   {t("form.phone")}
                 </Label>
                 <div dir="ltr" className="mt-2 flex gap-2">
-                  <Select value={dialCode} onValueChange={setDialCode}>
-                    <SelectTrigger className="h-12 w-[110px] shrink-0 rounded-xl bg-cream-dark/60">
-                      <SelectValue />
+                  <Select
+                    value={countryCode}
+                    onValueChange={(v) => {
+                      const next = v as CountryCode;
+                      setCountryCode(next);
+                      // Reformat existing phone to new country
+                      const digits = phone.replace(/\D/g, "");
+                      setPhone(digits ? new AsYouType(next).input(digits) : "");
+                      clearError("phone");
+                    }}
+                  >
+                    <SelectTrigger className="h-12 w-[130px] shrink-0 rounded-xl bg-cream-dark/60">
+                      <SelectValue>
+                        <span className="mr-1">{country.flag}</span>
+                        {country.dial}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.dial}>
+                        <SelectItem key={c.code} value={c.code}>
                           <span className="mr-2">{c.flag}</span>
-                          {c.dial}
+                          {c.code} {c.dial}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -316,9 +331,18 @@ export function CheckoutSection({ selection }: Props) {
                     id="phone"
                     type="tel"
                     inputMode="numeric"
-                    placeholder="5XX XXX XX XX"
+                    placeholder={phoneExample || "Phone number"}
                     value={phone}
-                    onChange={(e) => { const v = e.target.value.replace(/[^\d\s]/g, ""); setPhone(v); clearError("phone"); }}
+                    onChange={(e) => {
+                      const formatted = new AsYouType(countryCode).input(e.target.value);
+                      setPhone(formatted);
+                      if (!formatted || isValidPhoneNumber(formatted, countryCode)) clearError("phone");
+                    }}
+                    onBlur={() => {
+                      if (phone.trim().length > 0 && !isValidPhoneNumber(phone, countryCode)) {
+                        setErrors((p) => ({ ...p, phone: phoneInvalidMsg }));
+                      }
+                    }}
                     className="h-12 flex-1 rounded-xl bg-cream-dark/60 text-left"
                   />
                 </div>
