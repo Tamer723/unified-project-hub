@@ -133,7 +133,7 @@ export default function Payment3DSMock() {
             <div className="rounded-xl bg-cream-dark/40 p-3">
               <div className="text-[11px] text-brown-mid">{t.card}</div>
               <div className="font-mono font-bold text-brown">
-                **** {meta.last4 ?? "····"}
+                **** {last4}
               </div>
             </div>
           </div>
