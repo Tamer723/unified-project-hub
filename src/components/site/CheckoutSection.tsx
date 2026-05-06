@@ -103,6 +103,7 @@ export function CheckoutSection({ selection }: Props) {
   const [cardCvc, setCardCvc] = useState("");
   const [paying, setPaying] = useState(false);
   const [agree, setAgree] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const unitPrice = selection?.unitPrice ?? 0;
