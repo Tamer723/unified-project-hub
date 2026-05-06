@@ -26,7 +26,12 @@ function siteOrigin(req: Request): string {
   // Prefer Origin/Referer if present, else fall back to a configured site URL or hardcoded.
   const ref = req.headers.get("referer");
   if (ref) {
-    try { const u = new URL(ref); return `${u.protocol}//${u.host}`; } catch { /* ignore */ }
+    try {
+      const u = new URL(ref);
+      // Ignore referers from payment providers (iyzico, nestpay, etc.) — use site URL instead
+      const isProvider = /iyzipay|iyzico|asseco|ziraat|nestpay/i.test(u.host);
+      if (!isProvider) return `${u.protocol}//${u.host}`;
+    } catch { /* ignore */ }
   }
   return Deno.env.get("PUBLIC_SITE_URL") || "https://campaign.4c.studio";
 }
