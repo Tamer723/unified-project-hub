@@ -193,6 +193,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Currency conversion: DB stores USD; if client requests TRY, convert.
+    const USD_TO_TRY = 45;
+    if (currency === "TRY" && serverCurrency === "USD") {
+      serverUnitPrice = Math.round(serverUnitPrice! * USD_TO_TRY);
+      serverCurrency = "TRY";
+    } else if (currency === "USD" && serverCurrency === "TRY") {
+      serverUnitPrice = Math.round(serverUnitPrice! / USD_TO_TRY);
+      serverCurrency = "USD";
+    }
+
     const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const total = serverUnitPrice! * quantity;
     const expires_at = new Date(Date.now() + 30 * 60 * 1000).toISOString();
