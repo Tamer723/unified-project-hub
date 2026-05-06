@@ -1,122 +1,143 @@
 {
   "header": {
-    "name": "Kudüs Vakfı — Eğitim ve Yardım",
-    "cta": "Kurbanını Vekâletle Kes",
+    "name": "Kudüs Vakfı – Eğitim ve Yardım",
+    "cta": "Kurban Vekâleti Ver",
+    "lang_bar": { "tag": "Kurban Sezonu 1447H" },
+    "nav": { "tracks": "Yollar", "why": "Neden İki Sevap", "trust": "Güven", "faq": "SSS" },
     "countdown": {
-      "prefix": "Kurban Bayramına kalan süre",
-      "days": "Gün",
-      "hours": "Saat",
-      "minutes": "Dakika",
-      "seconds": "Saniye"
+      "prefix": "Kurban Bayramı'na kalan",
+      "days": "gün", "hours": "saat", "minutes": "dk", "seconds": "sn"
     }
   },
   "hero": {
-    "badge": "Kurban Mevsimi 1447H",
-    "title": "Kurbanın İki Sevap",
-    "subtitle": "Bir sünneti ihya etmenin sevabı, bir aç insanı doyurmanın sevabı. Kurbanını emanetle keser, Gazze'ye ve İslam coğrafyasının ihtiyaç sahiplerine ulaştırırız.",
-    "cta_primary": "Kurbanını Vekâletle Kes",
-    "cta_secondary": "Emanetin nasıl ulaşır?",
-    "stats": {
-      "sacrifices": "Dağıtılan kurban",
-      "countries": "Ülke",
-      "years": "Yıllık saha tecrübesi"
-    }
+    "badge": "Kurban Sezonu 1447H",
+    "title": "Kurbanın, İki Sevap",
+    "subtitle": "Bir sünneti ihya etmenin sevabı ve bir açı doyurmanın sevabı. Kurbanını emanetle keser, Gazze'ye ve İslam dünyasının dört bir yanındaki muhtaçlara ulaştırırız.",
+    "cta_primary": "Hemen Vekâlet Ver",
+    "cta_secondary": "Emanet nasıl ulaşıyor?",
+    "stats": { "sacrifices": "Dağıtılan kurban", "countries": "Ülke", "years": "Sahada yıl" },
+    "float_card": { "label": "Sudan'dan koyun", "value": "5.175 ₺" },
+    "float_badge": "Doğrulanmış kesim belgesi"
+  },
+  "why": {
+    "eyebrow": "Neden İki Sevap?",
+    "title": "Tek Amelde İki Sevap",
+    "subtitle": "Adına kesilen bir kurban ve hiç eti olmayanlara ulaşan et.",
+    "cards": [
+      { "verse": "\"Rabbin için namaz kıl ve kurban kes.\"", "title": "Sünneti İhya Sevabı", "text": "Kurban ibadetini vakti içinde ve şer'i usûle uygun şekilde adına eda etmek." },
+      { "verse": "\"Onlar yiyeceği yoksula, yetime ve esire yedirirler…\"", "title": "Açı Doyurma Sevabı", "text": "Taze et; Gazze'deki ve dünyanın muhtaç bölgelerindeki ailelere ulaşır." },
+      { "verse": "\"İyilik ve takvada yardımlaşın.\"", "title": "Mazluma Yardım Sevabı", "text": "Kuşatmayı kırmaya ve en muhtaca hayır ulaştırmaya ortaklık." }
+    ]
   },
   "tracks": {
-    "title": "Kurban yolunu seç",
-    "subtitle": "Belgelenmiş üç yol — sana uygun olanı seç",
-    "popular": "En çok tercih edilen",
-    "choose": "Bu yolu seç",
-    "from": "Başlangıç"
+    "eyebrow": "Üç doğrulanmış yol",
+    "title": "Kurban Yolunu Seç",
+    "subtitle": "Her yol, tam belgelendirme ile sahibine ulaşır",
+    "popular": "En Çok Tercih",
+    "choose": "Bu Yolu Seç",
+    "from": "başlangıç",
+    "unit": "kurban başına"
   },
   "track1": {
-    "title": "Sünneti ihya et, Gazze'yi doyur",
-    "features": [
-      "Afrika'da bir hisse büyükbaş kurban",
-      "Gazze'de bir aileye et yardımı",
-      "Uygulama sonrası fotoğraflı belgeleme"
-    ]
+    "title": "Sünnete Uy, Gazze'yi Doyur",
+    "tagline": "Afrika'da kesim, eti Gazze'ye",
+    "note": "Sabit fiyat — emanetle uygulanır",
+    "features": ["Afrika'da bir hisse büyükbaş kesimi", "Gazze'de bir aileye et", "Uygulama sonrası fotoğraflı belge"]
   },
   "track2": {
-    "title": "Kurbanın ablukayı aşar",
-    "features": [
-      "Kesim + konserveleme + sterilizasyon + sevkiyat",
-      "Gazze'ye 12 konserve et kutusu",
-      "Sudan'dan Gazzeli kardeşlerimize"
-    ]
+    "title": "Kurbanın Kuşatmayı Aşıyor",
+    "tagline": "Kesim, konserveleme ve Gazze'ye sevkiyat",
+    "note": "Her kurban için 12 konserve",
+    "features": ["Kesim + konserveleme + sterilizasyon + nakliye", "12 et konservesi Gazze'ye ulaşır", "Sudan'dan Gazze'deki kardeşlerimize"]
   },
   "track3": {
     "title": "Canlı Kurbanlar",
-    "country_label": "Ülke seç",
-    "animal_label": "Hayvan türü",
+    "tagline": "Ülke ve hayvan seç",
+    "country_label": "Ülke",
+    "animal_label": "Hayvan",
+    "weight_note": "Fiyat seçime göre güncellenir",
+    "features": ["Koyun veya 1/7 büyükbaş hisse seçeneği", "7 ülkede uygulama", "Yerel olarak ihtiyaç sahiplerine dağıtım"],
     "countries": {
-      "SY": "Suriye",
-      "EG": "Mısır",
-      "SD": "Sudan",
-      "TD": "Çad",
-      "LB": "Lübnan",
-      "YE": "Yemen"
+      "JM": "Kudüs", "WB": "Batı Şeria", "LB": "Lübnan",
+      "SY": "Suriye", "SD": "Sudan", "YE": "Yemen", "BD": "Bangladeş"
     },
-    "animals": {
-      "sheep": "Koyun / Keçi",
-      "cow": "İnek (yedide bir hisse)"
-    }
+    "animals": { "sheep": "Koyun / Keçi", "cow_share": "1/7 Büyükbaş Hisse" }
   },
   "form": {
     "title": "Vekâleti Tamamla",
-    "steps": { "select": "Seçim", "info": "Bilgilerin", "pay": "Ödeme" },
+    "steps": { "info": "Bilgileriniz", "pay": "Ödeme" },
     "track": "Seçilen yol",
     "quantity": "Kurban sayısı",
     "unit_price": "Birim fiyat",
     "total": "Toplam",
-    "name": "Ad Soyad",
+    "name": "Ad soyad",
     "email": "E-posta",
-    "phone": "Telefon (opsiyonel)",
-    "intention": "Niyet / vekâlet verilen kişiler (opsiyonel)",
-    "consent": "Kurbanımın şer'î usule göre adıma kesilmesi için sizi vekil tayin ediyorum",
-    "next": "İleri",
-    "back": "Geri",
-    "continue_pay": "Ödemeye Geç",
-    "summary": "Sipariş Özeti",
-    "secure": "Güvenli ödeme",
+    "phone": "Telefon (isteğe bağlı)",
+    "intention": "Niyet / isimler (isteğe bağlı)",
+    "consent": "Kurbanımı şer'i hükümlere uygun şekilde benim adıma kesmenize vekâlet veriyorum",
+    "next": "İleri", "back": "Geri",
+    "continue_pay": "Ödemeye geç",
+    "summary": "Sipariş özeti", "secure": "Güvenli ödeme",
     "errors": {
-      "name": "İsim zorunlu",
+      "name": "Ad gerekli",
       "email": "Geçerli bir e-posta gerekli",
       "consent": "Vekâlet onayı gerekli"
     }
   },
   "trust": {
-    "title": "Güven ve Belgeleme",
+    "title": "Güven ve Şeffaflık",
+    "subtitle": "Önce Allah'a, sonra size hesap veririz",
+    "badges": [
+      { "label": "Dağıtılan kurban", "value": "5.000+" },
+      { "label": "Yıllık tecrübe", "value": "5+" },
+      { "label": "Ülke", "value": "7" },
+      { "label": "Saha ortağı", "value": "12" }
+    ],
     "items": [
-      { "title": "Sahadan gerçek belgeleme", "desc": "Her kurban için sahadan fotoğraf ve video" },
-      { "title": "Yıllara dayanan tecrübe", "desc": "5 yılı aşkın kesintisiz yardım çalışması" },
-      { "title": "Şer'î vekâlet", "desc": "Açık ve net şer'î vekâlet metni" }
+      { "title": "Gerçek saha belgelendirmesi", "desc": "Her kurban için sahadan fotoğraf ve video" },
+      { "title": "Yılların doğrulanmış tecrübesi", "desc": "5 yılı aşkın sürekli yardım çalışması" },
+      { "title": "Şer'i vekâlet", "desc": "Açık şer'i ifadelerle kesim vekâleti" }
     ]
   },
   "faq": {
     "title": "Sıkça Sorulan Sorular",
     "items": [
-      { "q": "Kurban ne zaman kesilir?", "a": "Bayram günü ve teşrik günlerinde kesilir, hemen ardından belgeleme tarafınıza ulaşır." },
-      { "q": "Kurbanımın kesildiğinden nasıl emin olurum?", "a": "Sizin için tahsis edilen kurban numarası ile sahadan görsel belgeleme gönderilir." },
-      { "q": "Vekâletin hükmü nedir?", "a": "Kurbanı vekâletle kestirmek fakihlerin ittifakıyla caizdir." },
-      { "q": "Etler nereye dağıtılır?", "a": "Kesim ülkesindeki ihtiyaç sahibi ailelere ve mültecilere, Gazze halkına öncelik vererek dağıtılır." },
-      { "q": "Belirli bir kişi için niyet edebilir miyim?", "a": "Evet, niyet alanına ismi yazabilirsiniz; kesim sırasında zikredilir." }
+      { "q": "Kurban ne zaman kesilir?", "a": "Kesim günlerinde (Bayram günü ve teşrik günleri) kesilir, belgelendirme hemen ardından gönderilir." },
+      { "q": "Kurbanımın kesildiğinden nasıl emin olurum?", "a": "Sahadan fotoğraf ve video ile size özel kurban numarasını gönderiyoruz." },
+      { "q": "Vekâletin hükmü nedir?", "a": "Kurban kesiminde vekâlet, fakihlerin ittifakıyla caizdir." },
+      { "q": "Kurban etleri nereye gidiyor?", "a": "Kesim ülkesindeki yoksul ve yerinden edilmiş ailelere, Gazze öncelikli olarak dağıtılır." },
+      { "q": "Niyeti belirli bir kişiye adayabilir miyim?", "a": "Evet, niyet alanına ismi yazabilirsiniz; kesim sırasında zikredilir." },
+      { "q": "Üç yol arasındaki fark nedir?", "a": "1. yol: Afrika'da kesim ve Gazze'yi doyurma. 2. yol: kesim, konserve ve Gazze'ye sevkiyat. 3. yol: 7 ülkede canlı kurban." }
     ]
   },
   "footer": {
-    "rights": "© {{year}} Kudüs Vakfı — Eğitim ve Yardım. Tüm hakları saklıdır.",
-    "follow": "Bizi takip edin"
+    "rights": "© {{year}} Kudüs Vakfı – Eğitim ve Yardım. Tüm hakları saklıdır.",
+    "follow": "Bizi takip edin",
+    "about": { "text": "Beş yılı aşkın süredir Gazze ve İslam dünyasının çevresinde yardım ve eğitim alanında faaliyet gösteren bir hayır vakfı." },
+    "links": { "title": "Hızlı bağlantılar" },
+    "links_list": [
+      { "label": "Yollar", "href": "#tracks" },
+      { "label": "Neden İki Sevap", "href": "#why" },
+      { "label": "Güven", "href": "#trust" },
+      { "label": "SSS", "href": "#faq" }
+    ],
+    "contact": {
+      "title": "İletişim",
+      "address": "İstanbul, Türkiye",
+      "email": "info@quds-waqf.org",
+      "phone": "+90 555 555 5555"
+    }
   },
+  "sticky_cta": { "label": "Hemen Vekâlet Ver" },
+  "whatsapp": { "aria": "WhatsApp ile iletişim" },
   "success": {
-    "title": "Kurbanın elimize ulaştı, Allah kabul etsin",
-    "desc": "Emanetin tarafımıza ulaştı. Bayram günlerinde kesilecek ve belgeleme e-posta adresine gönderilecektir.",
-    "home": "Ana Sayfaya Dön",
-    "again": "Yeni bir kurban vekâleti"
+    "title": "Kurbanınız ulaştı, elhamdülillah",
+    "desc": "Emanetiniz bize ulaştı; inşaAllah kesim günlerinde tam belgelendirme ile uygulanacak ve e-postanıza gönderilecek.",
+    "home": "Ana sayfaya dön", "again": "Yeni vekâlet"
   },
   "failed": {
     "title": "Ödeme tamamlanamadı",
-    "desc": "Ödeme işlenirken bir hata oluştu. Hesabınızdan herhangi bir tahsilat yapılmadı.",
-    "retry": "Tekrar Dene",
-    "home": "Ana Sayfaya Dön"
+    "desc": "Ödeme işleminiz sırasında bir hata oluştu. Hesabınızdan herhangi bir ücret çekilmedi.",
+    "retry": "Tekrar dene", "home": "Ana sayfaya dön"
   }
 }

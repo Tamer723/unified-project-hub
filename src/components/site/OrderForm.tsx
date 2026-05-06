@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Lock } from "lucide-react";
@@ -13,40 +13,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import {
-  ANIMAL_PRICES,
-  COUNTRY_CODES,
-  TRACK_PRICES,
-  formatPrice,
-  type AnimalCode,
-  type CountryCode,
-} from "@/lib/pricing";
+import { formatPrice } from "@/lib/pricing";
 import type { Locale } from "@/lib/constants";
-import type { TrackId } from "./Tracks";
+import type { TrackSelection } from "./TrackCard";
 
 type Props = {
   open: boolean;
-  trackId: TrackId | null;
+  selection: TrackSelection | null;
   onOpenChange: (o: boolean) => void;
 };
 
-export function OrderForm({ open, trackId, onOpenChange }: Props) {
+export function OrderForm({ open, selection, onOpenChange }: Props) {
   const { t, i18n } = useTranslation();
   const locale = (i18n.language?.split("-")[0] || "ar") as Locale;
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1);
-  const [country, setCountry] = useState<CountryCode>("SY");
-  const [animal, setAnimal] = useState<AnimalCode>("sheep");
+  // Order form starts at info step (selection happens in the track card)
+  const [step, setStep] = useState<1 | 2>(1);
   const [quantity, setQuantity] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -58,19 +43,16 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
   useEffect(() => {
     if (open) {
       setStep(1);
+      setQuantity(1);
       setErrors({});
     }
-  }, [open, trackId]);
+  }, [open, selection?.trackId]);
 
-  const unitPriceUsd = useMemo(() => {
-    if (trackId === "track1") return TRACK_PRICES.track1;
-    if (trackId === "track2") return TRACK_PRICES.track2;
-    return ANIMAL_PRICES[animal];
-  }, [trackId, animal]);
+  if (!selection) return null;
 
-  const totalUsd = unitPriceUsd * quantity;
+  const totalUsd = selection.unitPrice * quantity;
 
-  const validateStep2 = () => {
+  const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
@@ -80,8 +62,7 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
   };
 
   const handleNext = () => {
-    if (step === 2 && !validateStep2()) return;
-    setStep((s) => Math.min(3, s + 1));
+    if (validateInfo()) setStep(2);
   };
 
   const handlePay = () => {
@@ -89,8 +70,6 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
     onOpenChange(false);
     setTimeout(() => navigate("/success"), 200);
   };
-
-  if (!trackId) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,7 +80,7 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
 
         {/* Stepper */}
         <div className="flex items-center justify-between gap-2 text-xs">
-          {(["select", "info", "pay"] as const).map((k, i) => {
+          {(["info", "pay"] as const).map((k, i) => {
             const idx = i + 1;
             const active = step >= idx;
             return (
@@ -117,51 +96,26 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
                 <span className={cn("text-xs", active ? "text-brown" : "text-brown-mid")}>
                   {t(`form.steps.${k}`)}
                 </span>
-                {i < 2 && <div className="h-px flex-1 bg-sand/40" />}
+                {i < 1 && <div className="h-px flex-1 bg-sand/40" />}
               </div>
             );
           })}
         </div>
 
-        {step === 1 && (
-          <div className="space-y-4">
-            <div className="rounded-xl bg-green-pale px-4 py-3">
-              <div className="text-xs text-brown-mid">{t("form.track")}</div>
-              <div className="font-semibold text-brown">{t(`${trackId}.title`)}</div>
+        {/* Selection summary */}
+        <div className="rounded-xl bg-green-pale px-4 py-3">
+          <div className="text-xs text-brown-mid">{t("form.track")}</div>
+          <div className="font-bold text-brown">{t(`${selection.trackId}.title`)}</div>
+          {selection.trackId === "track3" && selection.country && selection.animal && (
+            <div className="mt-1 text-xs text-brown-mid">
+              {t(`track3.countries.${selection.country}`)} · {t(`track3.animals.${selection.animal}`)}
             </div>
+          )}
+        </div>
 
-            {trackId === "track3" && (
-              <>
-                <div className="space-y-2">
-                  <Label>{t("track3.country_label")}</Label>
-                  <Select value={country} onValueChange={(v) => setCountry(v as CountryCode)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {COUNTRY_CODES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {t(`track3.countries.${c}`)} — {formatPrice(ANIMAL_PRICES[animal], locale)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("track3.animal_label")}</Label>
-                  <Select value={animal} onValueChange={(v) => setAnimal(v as AnimalCode)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(ANIMAL_PRICES) as AnimalCode[]).map((a) => (
-                        <SelectItem key={a} value={a}>
-                          {t(`track3.animals.${a}`)} — {formatPrice(ANIMAL_PRICES[a], locale)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
+        {step === 1 && (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
               <Label htmlFor="qty">{t("form.quantity")}</Label>
               <Input
                 id="qty"
@@ -171,16 +125,6 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
                 onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
               />
             </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-brown text-primary-foreground px-4 py-3">
-              <span className="text-sm opacity-80">{t("form.total")}</span>
-              <span className="text-xl font-bold">{formatPrice(totalUsd, locale)}</span>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="name">{t("form.name")} *</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -204,23 +148,28 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
               <span className="text-brown-mid">{t("form.consent")} *</span>
             </label>
             {errors.consent && <p className="text-xs text-destructive">{errors.consent}</p>}
+
+            <div className="flex items-center justify-between rounded-xl bg-brown text-primary-foreground px-4 py-3">
+              <span className="text-sm opacity-80">{t("form.total")}</span>
+              <span className="text-xl font-bold">{formatPrice(totalUsd, locale)}</span>
+            </div>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <div className="space-y-4">
             <div className="rounded-xl border border-sand/40 bg-card p-4">
-              <div className="font-semibold text-brown">{t("form.summary")}</div>
+              <div className="font-bold text-brown">{t("form.summary")}</div>
               <div className="mt-3 space-y-1.5 text-sm">
-                <Row k={t("form.track")} v={t(`${trackId}.title`)} />
-                {trackId === "track3" && (
+                <Row k={t("form.track")} v={t(`${selection.trackId}.title`)} />
+                {selection.trackId === "track3" && selection.country && selection.animal && (
                   <>
-                    <Row k={t("track3.country_label")} v={t(`track3.countries.${country}`)} />
-                    <Row k={t("track3.animal_label")} v={t(`track3.animals.${animal}`)} />
+                    <Row k={t("track3.country_label")} v={t(`track3.countries.${selection.country}`)} />
+                    <Row k={t("track3.animal_label")} v={t(`track3.animals.${selection.animal}`)} />
                   </>
                 )}
                 <Row k={t("form.quantity")} v={String(quantity)} />
-                <Row k={t("form.unit_price")} v={formatPrice(unitPriceUsd, locale)} />
+                <Row k={t("form.unit_price")} v={formatPrice(selection.unitPrice, locale)} />
                 <div className="my-2 h-px bg-sand/40" />
                 <Row k={t("form.total")} v={formatPrice(totalUsd, locale)} bold />
               </div>
@@ -228,7 +177,7 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
             <Button
               onClick={handlePay}
               size="lg"
-              className="w-full bg-green hover:bg-green-mid text-primary-foreground rounded-full"
+              className="w-full rounded-full bg-green hover:bg-green-mid text-primary-foreground"
             >
               <Lock className="h-4 w-4" />
               {t("form.continue_pay")}
@@ -245,17 +194,17 @@ export function OrderForm({ open, trackId, onOpenChange }: Props) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            onClick={() => setStep(1)}
             disabled={step === 1}
             className="rounded-full"
           >
             {t("form.back")}
           </Button>
-          {step < 3 && (
+          {step === 1 && (
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-green hover:bg-green-mid text-primary-foreground rounded-full"
+              className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
             >
               {t("form.next")}
             </Button>

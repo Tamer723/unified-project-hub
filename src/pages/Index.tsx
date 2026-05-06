@@ -2,19 +2,23 @@ import { useState } from "react";
 import { useDirection } from "@/hooks/useDirection";
 import { Header } from "@/components/site/Header";
 import { Hero } from "@/components/site/Hero";
-import { Tracks, type TrackId } from "@/components/site/Tracks";
+import { WhySection } from "@/components/site/WhySection";
+import { Tracks } from "@/components/site/Tracks";
 import { OrderForm } from "@/components/site/OrderForm";
 import { TrustSection } from "@/components/site/TrustSection";
 import { Faq } from "@/components/site/Faq";
 import { Footer } from "@/components/site/Footer";
+import { StickyCta } from "@/components/site/StickyCta";
+import { WhatsAppFloat } from "@/components/site/WhatsAppFloat";
+import type { TrackSelection } from "@/components/site/TrackCard";
 
 const Index = () => {
   useDirection();
   const [open, setOpen] = useState(false);
-  const [track, setTrack] = useState<TrackId | null>(null);
+  const [selection, setSelection] = useState<TrackSelection | null>(null);
 
-  const onSelect = (id: TrackId) => {
-    setTrack(id);
+  const handleSelect = (sel: TrackSelection) => {
+    setSelection(sel);
     setOpen(true);
   };
 
@@ -23,12 +27,15 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <Tracks onSelect={onSelect} />
+        <WhySection />
+        <Tracks onSelect={handleSelect} />
         <TrustSection />
         <Faq />
       </main>
       <Footer />
-      <OrderForm open={open} trackId={track} onOpenChange={setOpen} />
+      <OrderForm open={open} selection={selection} onOpenChange={setOpen} />
+      <StickyCta />
+      <WhatsAppFloat />
     </div>
   );
 };

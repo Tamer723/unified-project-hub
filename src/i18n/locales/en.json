@@ -1,122 +1,143 @@
 {
   "header": {
-    "name": "Al-Quds Endowment — Education & Relief",
-    "cta": "Sponsor your Udhiya now",
+    "name": "Quds Waqf for Education & Relief",
+    "cta": "Sponsor a Sacrifice",
+    "lang_bar": { "tag": "Udhiyah Season 1447H" },
+    "nav": { "tracks": "Tracks", "why": "Why Two Rewards", "trust": "Trust", "faq": "FAQ" },
     "countdown": {
-      "prefix": "Time left until Eid al-Adha",
-      "days": "Days",
-      "hours": "Hours",
-      "minutes": "Minutes",
-      "seconds": "Seconds"
+      "prefix": "Time until Eid al-Adha",
+      "days": "days", "hours": "h", "minutes": "m", "seconds": "s"
     }
   },
   "hero": {
-    "badge": "Udhiya Season 1447H",
-    "title": "Two Rewards in One Sacrifice",
-    "subtitle": "The reward of reviving a Sunnah, and the reward of feeding the hungry. We carry out your Udhiya with trust and deliver the meat to families in Gaza and across the Muslim world.",
-    "cta_primary": "Sponsor your Udhiya now",
+    "badge": "Udhiyah Season 1447H",
+    "title": "Your Sacrifice, Two Rewards",
+    "subtitle": "The reward of reviving a Sunnah, and the reward of feeding the hungry. Trust us to perform your Udhiyah and deliver it to those in need in Gaza and across the Muslim world.",
+    "cta_primary": "Sponsor Now",
     "cta_secondary": "How does it reach them?",
-    "stats": {
-      "sacrifices": "Udhiya distributed",
-      "countries": "Countries",
-      "years": "Years on the ground"
-    }
+    "stats": { "sacrifices": "Sacrifices delivered", "countries": "Countries", "years": "Years on the ground" },
+    "float_card": { "label": "Sheep from Sudan", "value": "$115" },
+    "float_badge": "Verified slaughter certificate"
+  },
+  "why": {
+    "eyebrow": "Why Two Rewards?",
+    "title": "Two Rewards in One Act",
+    "subtitle": "An Udhiyah performed on your behalf, and meat that reaches those who have none.",
+    "cards": [
+      { "verse": "“So pray to your Lord and sacrifice.”", "title": "Reward of the Sunnah", "text": "Performing the rite of Udhiyah on time and in accordance with the Shariah." },
+      { "verse": "“They feed the needy, the orphan, and the captive…”", "title": "Reward of Feeding", "text": "Fresh meat reaches displaced and impoverished families in Gaza and beyond." },
+      { "verse": "“Cooperate in righteousness and piety.”", "title": "Reward of Aiding the Afflicted", "text": "A partnership in breaking the siege and bringing relief to those who need it most." }
+    ]
   },
   "tracks": {
-    "title": "Choose your Udhiya track",
-    "subtitle": "Three documented paths — pick what suits you best",
-    "popular": "Most chosen",
-    "choose": "Choose this track",
-    "from": "From"
+    "eyebrow": "Three verified tracks",
+    "title": "Choose Your Sacrifice Track",
+    "subtitle": "Each track reaches its recipients with full documentation",
+    "popular": "Most Chosen",
+    "choose": "Choose this Track",
+    "from": "from",
+    "unit": "per sacrifice"
   },
   "track1": {
-    "title": "Revive a Sunnah, Feed Gaza",
-    "features": [
-      "One cow share slaughtered in Africa",
-      "A meat package for a family in Gaza",
-      "Photo documentation after execution"
-    ]
+    "title": "Sunnah Sacrifice & Feed Gaza",
+    "tagline": "Sacrifice in Africa, food to Gaza",
+    "note": "Fixed price — performed with care",
+    "features": ["Cow share slaughtered in Africa", "Feeds a family in Gaza", "Photo documentation after execution"]
   },
   "track2": {
-    "title": "Your Udhiya breaks the siege",
-    "features": [
-      "Slaughter + canning + sterilising + shipping",
-      "12 cans of meat reach Gaza",
-      "From Sudan to our people in Gaza"
-    ]
+    "title": "Your Sacrifice Crosses the Siege",
+    "tagline": "Slaughter, can, and ship to Gaza",
+    "note": "12 cans of meat per sacrifice",
+    "features": ["Slaughter + canning + sterilization + shipping", "12 cans of meat reach Gaza", "From Sudan to our people in Gaza"]
   },
   "track3": {
-    "title": "Live Animal Sacrifices",
-    "country_label": "Choose country",
-    "animal_label": "Animal type",
+    "title": "Live Sacrifices",
+    "tagline": "Pick country and animal",
+    "country_label": "Country",
+    "animal_label": "Animal",
+    "weight_note": "Price updates with selection",
+    "features": ["Sheep or 1/7 cow share option", "Performed in 7 countries", "Local distribution to the needy"],
     "countries": {
-      "SY": "Syria",
-      "EG": "Egypt",
-      "SD": "Sudan",
-      "TD": "Chad",
-      "LB": "Lebanon",
-      "YE": "Yemen"
+      "JM": "Jerusalem", "WB": "West Bank", "LB": "Lebanon",
+      "SY": "Syria", "SD": "Sudan", "YE": "Yemen", "BD": "Bangladesh"
     },
-    "animals": {
-      "sheep": "Sheep / Goat",
-      "cow": "Cow (1/7 share)"
-    }
+    "animals": { "sheep": "Sheep / Goat", "cow_share": "1/7 Cow Share" }
   },
   "form": {
-    "title": "Complete your sponsorship",
-    "steps": { "select": "Select", "info": "Your info", "pay": "Pay" },
+    "title": "Complete Your Sponsorship",
+    "steps": { "info": "Your details", "pay": "Payment" },
     "track": "Selected track",
-    "quantity": "Number of Udhiya",
+    "quantity": "Number of sacrifices",
     "unit_price": "Unit price",
     "total": "Total",
     "name": "Full name",
     "email": "Email",
     "phone": "Phone (optional)",
-    "intention": "Intention / names of those represented (optional)",
-    "consent": "I authorise you to perform my Udhiya on my behalf according to Shariah",
-    "next": "Next",
-    "back": "Back",
+    "intention": "Intention / names (optional)",
+    "consent": "I authorize you to perform the sacrifice on my behalf according to the Shariah",
+    "next": "Next", "back": "Back",
     "continue_pay": "Continue to payment",
-    "summary": "Order summary",
-    "secure": "Secure payment",
+    "summary": "Order summary", "secure": "Secure payment",
     "errors": {
       "name": "Name is required",
       "email": "A valid email is required",
-      "consent": "Consent is required"
+      "consent": "Authorization is required"
     }
   },
   "trust": {
-    "title": "Trust & Documentation",
+    "title": "Trust & Transparency",
+    "subtitle": "Accountable to Allah first, then to you",
+    "badges": [
+      { "label": "Sacrifices delivered", "value": "5,000+" },
+      { "label": "Years of work", "value": "5+" },
+      { "label": "Countries", "value": "7" },
+      { "label": "Field partners", "value": "12" }
+    ],
     "items": [
-      { "title": "Real field documentation", "desc": "Photos and video from the field for every Udhiya" },
-      { "title": "Years of proven work", "desc": "Over 5 years of continuous relief work" },
-      { "title": "Shariah-compliant proxy", "desc": "Clear Shariah authorisation wording" }
+      { "title": "Real field documentation", "desc": "Photos and video from the ground for every sacrifice" },
+      { "title": "Years of proven work", "desc": "Over 5 years of sustained relief work" },
+      { "title": "Shariah authorization", "desc": "Clear shariah wording for the sacrifice mandate" }
     ]
   },
   "faq": {
     "title": "Frequently Asked Questions",
     "items": [
-      { "q": "When is the Udhiya performed?", "a": "It is performed on the day of Eid and the days of Tashreeq, with documentation sent to you straight after." },
-      { "q": "How do I confirm my Udhiya was executed?", "a": "We send you photos and video from the field with your unique Udhiya reference number." },
-      { "q": "Is proxy slaughter permitted?", "a": "Authorising someone to perform the Udhiya on your behalf is permissible by consensus of the scholars." },
-      { "q": "Where does the meat go?", "a": "Distributed to needy families and displaced people in the country of slaughter, prioritising our people in Gaza." },
-      { "q": "Can I dedicate the intention to a specific person?", "a": "Yes — write the name in the intention field and it will be mentioned at the time of slaughter." }
+      { "q": "When is the sacrifice performed?", "a": "On the days of slaughter (Eid day and Tashreeq days), with documentation sent immediately after." },
+      { "q": "How can I confirm my sacrifice was performed?", "a": "We send photos and video from the field along with your unique sacrifice number." },
+      { "q": "What is the ruling on appointing a proxy?", "a": "Appointing a proxy for the sacrifice is permissible by the consensus of jurists." },
+      { "q": "Where does the meat go?", "a": "Distributed to poor and displaced families in the country of slaughter, with priority to Gaza." },
+      { "q": "Can I dedicate the intention to a specific person?", "a": "Yes, write the name in the intention field and it will be mentioned at slaughter." },
+      { "q": "What is the difference between the three tracks?", "a": "Track 1: slaughter in Africa and feed Gaza. Track 2: slaughter, canning and shipping to Gaza. Track 3: live sacrifices in 7 countries." }
     ]
   },
   "footer": {
-    "rights": "© {{year}} Al-Quds Endowment — Education & Relief. All rights reserved.",
-    "follow": "Follow us"
+    "rights": "© {{year}} Quds Waqf for Education & Relief — All rights reserved",
+    "follow": "Follow us",
+    "about": { "text": "A charitable endowment with over five years of work in relief and education in Gaza and across the Muslim world." },
+    "links": { "title": "Quick links" },
+    "links_list": [
+      { "label": "Tracks", "href": "#tracks" },
+      { "label": "Why Two Rewards", "href": "#why" },
+      { "label": "Trust", "href": "#trust" },
+      { "label": "FAQ", "href": "#faq" }
+    ],
+    "contact": {
+      "title": "Contact us",
+      "address": "Istanbul, Türkiye",
+      "email": "info@quds-waqf.org",
+      "phone": "+90 555 555 5555"
+    }
   },
+  "sticky_cta": { "label": "Sponsor a Sacrifice Now" },
+  "whatsapp": { "aria": "Contact us on WhatsApp" },
   "success": {
-    "title": "Your Udhiya was received, alhamdulillah",
-    "desc": "We received your trust. It will be carried out, in shaa Allah, on the days of Nahr with full documentation sent to your email.",
-    "home": "Back to home",
-    "again": "Sponsor another Udhiya"
+    "title": "Your sacrifice has been received, alhamdulillah",
+    "desc": "We received your trust and will perform it, in shaa Allah, on the days of slaughter with full documentation sent to your email.",
+    "home": "Back to home", "again": "Sponsor another"
   },
   "failed": {
     "title": "Payment could not be completed",
-    "desc": "Something went wrong while processing your payment. No amount has been charged.",
-    "retry": "Try again",
-    "home": "Back to home"
+    "desc": "An error occurred while processing your payment. No amount was charged.",
+    "retry": "Try again", "home": "Back to home"
   }
 }
