@@ -92,7 +92,7 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
   };
 
   return (
-    <section id="checkout" className="bg-cream py-16 md:py-24">
+    <section id="checkout" className="bg-cream-dark/60 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <span className="inline-block rounded-full bg-green/10 px-4 py-1 text-xs font-bold text-green">
