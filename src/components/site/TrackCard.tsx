@@ -75,11 +75,18 @@ export function TrackCard({
   return (
     <article
       className={cn(
-        "relative grid h-full grid-rows-[auto_auto_140px_1fr_auto] rounded-3xl border bg-card shadow-soft transition-all hover:shadow-elevated hover:-translate-y-1",
+        "relative grid h-full grid-rows-[auto_auto_140px_1fr_auto] rounded-3xl border bg-card shadow-soft transition-all",
+        !disabled && "hover:shadow-elevated hover:-translate-y-1",
         popular ? "border-sand ring-2 ring-sand/40" : "border-sand/30",
+        disabled && "opacity-60 grayscale",
       )}
+      aria-disabled={disabled || undefined}
     >
-      {popular && (
+      {disabled ? (
+        <span className="absolute -top-3 start-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-muted px-4 py-1 text-xs font-extrabold text-muted-foreground shadow-soft">
+          {t("tracks.unavailable")}
+        </span>
+      ) : popular && (
         <span className="absolute -top-3 start-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-sand px-4 py-1 text-xs font-extrabold text-brown shadow-soft">
           <Star className="h-3 w-3 fill-current" />
           {t("tracks.popular")}
