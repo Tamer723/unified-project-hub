@@ -485,7 +485,7 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
-                disabled={paying || !captchaToken}
+                disabled={paying || !captchaToken || !cardFormValid}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
