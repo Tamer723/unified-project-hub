@@ -177,7 +177,7 @@ export function CheckoutSection({ selection }: Props) {
                 <Label htmlFor="phone" className="text-brown-mid">
                   {t("form.phone")}
                 </Label>
-                <div className="mt-2 flex gap-2">
+                <div dir="ltr" className="mt-2 flex gap-2">
                   <Select value={dialCode} onValueChange={setDialCode}>
                     <SelectTrigger className="h-12 w-[110px] shrink-0 rounded-xl bg-cream-dark/60">
                       <SelectValue />
@@ -185,7 +185,7 @@ export function CheckoutSection({ selection }: Props) {
                     <SelectContent className="max-h-72">
                       {COUNTRIES.map((c) => (
                         <SelectItem key={c.code} value={c.dial}>
-                          <span className="me-2">{c.flag}</span>
+                          <span className="mr-2">{c.flag}</span>
                           {c.dial}
                         </SelectItem>
                       ))}
@@ -198,7 +198,7 @@ export function CheckoutSection({ selection }: Props) {
                     placeholder="5XX XXX XX XX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
-                    className="h-12 flex-1 rounded-xl bg-cream-dark/60"
+                    className="h-12 flex-1 rounded-xl bg-cream-dark/60 text-left"
                   />
                 </div>
                 {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
