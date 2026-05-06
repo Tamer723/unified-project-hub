@@ -470,6 +470,11 @@ export function CheckoutSection({ selection }: Props) {
                             clearError("cc_cvc");
                           }
                         }}
+                        onBlur={() => {
+                          if (cardCvc && !isValidCvc(cardCvc, cardBrand)) {
+                            setErrors((p) => ({ ...p, cc_cvc: "CVC" }));
+                          }
+                        }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
                       {errors.cc_cvc && <p className="mt-1 text-xs text-destructive">{errors.cc_cvc}</p>}
