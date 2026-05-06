@@ -108,16 +108,18 @@ export function CheckoutSection({ selection }: Props) {
   const [agree, setAgree] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [activeProvider, setActiveProvider] = useState<"mock" | "nestpay_3d" | "nestpay_hosting">("mock");
+  type ProviderId = "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
+  const [activeProvider, setActiveProvider] = useState<ProviderId>("mock");
+  const [threeDSHtml, setThreeDSHtml] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.rpc("get_active_payment_provider").then(({ data }) => {
       const row = Array.isArray(data) ? data[0] : data;
-      if (row?.active_provider) setActiveProvider(row.active_provider as typeof activeProvider);
+      if (row?.active_provider) setActiveProvider(row.active_provider as ProviderId);
     });
   }, []);
 
-  const cardOnSite = activeProvider !== "nestpay_hosting";
+  const cardOnSite = activeProvider === "mock" || activeProvider === "nestpay_3d" || activeProvider === "iyzico_3ds";
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
