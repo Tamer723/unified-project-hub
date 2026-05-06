@@ -16,57 +16,69 @@ export type Database = {
     Tables: {
       orders: {
         Row: {
+          card_meta: Json | null
           created_at: string
           currency: string
           donor_email: string
           donor_name: string
           donor_phone: string | null
           expires_at: string | null
+          failure_reason: string | null
           id: string
           intention: string | null
           matrix_id: string | null
           metadata: Json | null
           payment_url: string | null
           product_id: string
+          provider: string
           provider_ref: string | null
+          provider_txn_id: string | null
           quantity: number
           status: string
           total_amount: number
           unit_price: number
         }
         Insert: {
+          card_meta?: Json | null
           created_at?: string
           currency: string
           donor_email: string
           donor_name: string
           donor_phone?: string | null
           expires_at?: string | null
+          failure_reason?: string | null
           id?: string
           intention?: string | null
           matrix_id?: string | null
           metadata?: Json | null
           payment_url?: string | null
           product_id: string
+          provider?: string
           provider_ref?: string | null
+          provider_txn_id?: string | null
           quantity?: number
           status?: string
           total_amount: number
           unit_price: number
         }
         Update: {
+          card_meta?: Json | null
           created_at?: string
           currency?: string
           donor_email?: string
           donor_name?: string
           donor_phone?: string | null
           expires_at?: string | null
+          failure_reason?: string | null
           id?: string
           intention?: string | null
           matrix_id?: string | null
           metadata?: Json | null
           payment_url?: string | null
           product_id?: string
+          provider?: string
           provider_ref?: string | null
+          provider_txn_id?: string | null
           quantity?: number
           status?: string
           total_amount?: number

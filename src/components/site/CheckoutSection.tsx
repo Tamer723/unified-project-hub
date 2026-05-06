@@ -15,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/pricing";
+import { formatPrice, paymentCurrency } from "@/lib/pricing";
+import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
+import { supabase } from "@/integrations/supabase/client";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
@@ -95,6 +97,10 @@ export function CheckoutSection({ selection }: Props) {
   const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const cardBrand = detectCardBrand(cardNumber.replace(/\D/g, ""));
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
+  const [paying, setPaying] = useState(false);
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -138,13 +144,68 @@ export function CheckoutSection({ selection }: Props) {
     setStep(2);
   };
 
-  const handlePay = () => {
+  const validateCard = () => {
+    const e: Record<string, string> = {};
+    if (cardHolder.trim().length < 2)
+      e.cc_name = locale === "ar" ? "أدخل اسم حامل البطاقة" : locale === "tr" ? "Kart sahibi adı" : "Cardholder name";
+    if (!isValidCardNumber(cardNumber))
+      e.cc_number = locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number";
+    if (!isValidExpiry(cardExpiry))
+      e.cc_exp = locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry";
+    if (!isValidCvc(cardCvc, cardBrand))
+      e.cc_cvc = "CVC";
+    setErrors((prev) => ({ ...prev, ...e }));
+    return Object.keys(e).length === 0;
+  };
+
+  const handlePay = async () => {
     if (!agree) {
       toast.error(t("form.errors.consent"));
       return;
     }
-    toast.success(t("success.title"));
-    setTimeout(() => navigate("/success"), 250);
+    if (!selection) {
+      toast.error(t("checkout.select_first"));
+      return;
+    }
+    if (!validateCard()) return;
+
+    setPaying(true);
+    try {
+      const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
+      const digits = cardNumber.replace(/\D/g, "");
+
+      const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
+        body: {
+          donor: { name, email, phone: phone ? `${dialCode}${phone.replace(/\s/g, "")}` : null },
+          intention: intention || null,
+          quantity,
+          unit_price: selection.unitPrice,
+          currency: paymentCurrency(locale),
+          card: {
+            number: digits,
+            holder: cardHolder.trim(),
+            expMonth: parseInt(mm, 10),
+            expYear: 2000 + parseInt(yy, 10),
+            cvc: cardCvc.replace(/\D/g, ""),
+          },
+        },
+      });
+
+      if (error || !data || data.responseCode !== "00") {
+        const msg = data?.responseMessage || error?.message || "Payment init failed";
+        toast.error(msg);
+        return;
+      }
+
+      const last4 = digits.slice(-4);
+      const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
+      navigate(url);
+    } catch (err) {
+      console.error(err);
+      toast.error(locale === "ar" ? "خطأ في الاتصال" : "Connection error");
+    } finally {
+      setPaying(false);
+    }
   };
 
   return (
@@ -285,9 +346,13 @@ export function CheckoutSection({ selection }: Props) {
                     </Label>
                     <Input
                       id="cc-name"
+                      autoComplete="cc-name"
                       placeholder={locale === "ar" ? "كما يظهر على البطاقة" : "JOHN DOE"}
-                      className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                      className="mt-2 h-12 rounded-xl bg-cream-dark/60 uppercase"
                     />
+                    {errors.cc_name && <p className="mt-1 text-xs text-destructive">{errors.cc_name}</p>}
                   </div>
 
                   <div>
@@ -313,6 +378,7 @@ export function CheckoutSection({ selection }: Props) {
                         <BrandLogo brand={cardBrand} />
                       </div>
                     </div>
+                    {errors.cc_number && <p className="mt-1 text-xs text-destructive">{errors.cc_number}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -322,11 +388,20 @@ export function CheckoutSection({ selection }: Props) {
                       </Label>
                       <Input
                         id="cc-exp"
+                        dir="ltr"
                         inputMode="numeric"
+                        autoComplete="cc-exp"
                         placeholder="MM / YY"
                         maxLength={7}
-                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          if (v.length >= 3) v = `${v.slice(0, 2)} / ${v.slice(2)}`;
+                          setCardExpiry(v);
+                        }}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
+                      {errors.cc_exp && <p className="mt-1 text-xs text-destructive">{errors.cc_exp}</p>}
                     </div>
                     <div>
                       <Label htmlFor="cc-cvc" className="text-brown-mid">
@@ -334,11 +409,17 @@ export function CheckoutSection({ selection }: Props) {
                       </Label>
                       <Input
                         id="cc-cvc"
+                        dir="ltr"
+                        type="password"
                         inputMode="numeric"
+                        autoComplete="cc-csc"
                         placeholder="123"
-                        maxLength={4}
-                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                        maxLength={cardBrand === "amex" ? 4 : 3}
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
+                      {errors.cc_cvc && <p className="mt-1 text-xs text-destructive">{errors.cc_cvc}</p>}
                     </div>
                   </div>
                 </div>
@@ -372,10 +453,11 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
+                disabled={paying}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
-                {t("checkout.pay_cta")}
+                {paying ? "..." : t("checkout.pay_cta")}
               </Button>
             ) : (
               <Button
