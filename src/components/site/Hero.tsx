@@ -23,6 +23,9 @@ export function Hero() {
           <h1 className="mt-6 text-5xl font-black leading-[1.05] text-brown md:text-6xl lg:text-7xl">
             {t("hero.title")}
           </h1>
+          <p className="mt-4 font-amiri text-lg italic text-green md:text-xl">
+            {t("hero.ayah")}
+          </p>
           <div className="mt-6 inline-block max-w-2xl border-s-4 border-sand bg-sand/10 px-5 py-4 rounded-e-2xl text-start">
             <p className="text-base leading-relaxed text-brown-mid md:text-lg">
               {t("hero.subtitle")}
