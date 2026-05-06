@@ -47,6 +47,7 @@ export function TrackCard({
   pricingData,
   locale,
   popular,
+  disabled,
   country,
   animal,
   onCountryChange,
