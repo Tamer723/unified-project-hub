@@ -7,8 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type CardMeta = { last4?: string; brand?: string; holder?: string };
-
 export default function Payment3DSMock() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
