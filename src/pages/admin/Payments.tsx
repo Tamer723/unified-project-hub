@@ -10,26 +10,36 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, AlertTriangle, CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 
-type Provider = "mock" | "nestpay_3d" | "nestpay_hosting";
+type Provider = "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const CALLBACK_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/payment-callback`;
 
-const PROVIDER_INFO: Record<Provider, { title: string; desc: string; needsSecrets: boolean }> = {
+const PROVIDER_INFO: Record<Provider, { title: string; desc: string; secretsGroup: "none" | "nestpay" | "iyzico" }> = {
   mock: {
     title: "بوابة وهمية (محاكاة)",
     desc: "للاختبار الداخلي. لا تتصل بأي بنك. استخدم رمز 123456 للنجاح.",
-    needsSecrets: false,
+    secretsGroup: "none",
   },
   nestpay_3d: {
-    title: "NestPay 3D Model",
-    desc: "النموذج يُعرَض في موقعك، البنك يتحقق من 3DS فقط (OTP). يتطلب التزاماً أعلى بـ PCI-DSS.",
-    needsSecrets: true,
+    title: "NestPay 3D Model (زراعات)",
+    desc: "النموذج يُعرَض في موقعك، البنك يتحقق من 3DS فقط (OTP).",
+    secretsGroup: "nestpay",
   },
   nestpay_hosting: {
-    title: "NestPay 3D Pay Hosting",
-    desc: "البنك يستضيف صفحة الدفع بالكامل (الأبسط والأكثر أماناً، PCI-DSS SAQ-A).",
-    needsSecrets: true,
+    title: "NestPay 3D Pay Hosting (زراعات)",
+    desc: "البنك يستضيف صفحة الدفع بالكامل (الأبسط، PCI-DSS SAQ-A).",
+    secretsGroup: "nestpay",
+  },
+  iyzico_checkout: {
+    title: "iyzico Checkout Form",
+    desc: "iyzico تستضيف صفحة الدفع بالكامل (الأبسط، يدعم Sandbox للاختبار).",
+    secretsGroup: "iyzico",
+  },
+  iyzico_3ds: {
+    title: "iyzico Payment with 3DS",
+    desc: "نموذج البطاقة في موقعك، iyzico تتحقق من 3DS عبر iframe.",
+    secretsGroup: "iyzico",
   },
 };
 
