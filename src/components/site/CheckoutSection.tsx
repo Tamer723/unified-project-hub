@@ -453,10 +453,11 @@ export function CheckoutSection({ selection }: Props) {
             {step === 2 ? (
               <Button
                 onClick={handlePay}
+                disabled={paying}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
-                {t("checkout.pay_cta")}
+                {paying ? "..." : t("checkout.pay_cta")}
               </Button>
             ) : (
               <Button
