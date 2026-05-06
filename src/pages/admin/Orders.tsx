@@ -69,7 +69,7 @@ export default function Orders() {
   }, [orders, status, country, animal, donorCountry, search]);
 
   const exportCsv = () => {
-    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
+    const headers = ["id", "created_at", "donor_name", "donor_email", "donor_ip", "donor_country", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
     const rows = filtered.map((o) => {
       const cc = o.product_price_matrix?.country_code ?? "";
       const ac = o.product_price_matrix?.animal_code ?? "";
@@ -78,6 +78,8 @@ export default function Orders() {
         o.created_at,
         o.donor_name,
         o.donor_email,
+        o.donor_ip ?? "",
+        o.donor_country ?? "",
         o.products?.code ?? "",
         trackLabel(o),
         cc,
