@@ -15,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/pricing";
+import { formatPrice, paymentCurrency } from "@/lib/pricing";
+import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
+import { supabase } from "@/integrations/supabase/client";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
