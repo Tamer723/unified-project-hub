@@ -388,7 +388,14 @@ export function CheckoutSection({ selection }: Props) {
                           const brand = detectCardBrand(digits);
                           const formatted = formatCardNumber(digits, brand);
                           setCardNumber(formatted);
-                          if (isValidCardNumber(formatted)) clearError("cc_number");
+                          const expectedLen = brand === "amex" ? 15 : 16;
+                          if (isValidCardNumber(formatted)) {
+                            clearError("cc_number");
+                          } else if (digits.length >= expectedLen) {
+                            setErrors((p) => ({ ...p, cc_number: locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number" }));
+                          } else {
+                            clearError("cc_number");
+                          }
                         }}
                         className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
