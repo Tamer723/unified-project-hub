@@ -252,6 +252,8 @@ export default function Orders() {
             <div className="mt-6 space-y-3 text-sm">
               <Row k="ID" v={active.id} />
               <Row k="الحالة" v={active.status} />
+              <Row k="IP المتبرع" v={active.donor_ip ?? "—"} />
+              <Row k="دولة المتبرع" v={active.donor_country ? `${isoFlag(active.donor_country)} ${active.donor_country}` : "—"} />
               <Row k="المسار" v={`${trackLabel(active)}${active.products?.code ? ` (${active.products.code})` : ""}`} />
               {active.product_price_matrix && (
                 <>
