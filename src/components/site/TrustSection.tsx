@@ -12,10 +12,15 @@ export function TrustSection() {
   return (
     <section id="trust" className="bg-cream py-16 md:py-24">
       <div className="container">
-        <h2 className="mb-3 text-center text-3xl font-black text-brown md:text-4xl">
-          {t("trust.title")}
-        </h2>
-        <p className="mb-10 text-center text-brown-mid">{t("trust.subtitle")}</p>
+        <div className="mb-10 text-center">
+          <span className="inline-block rounded-full bg-sand/20 px-4 py-1 text-xs font-bold text-brown-mid">
+            {t("trust.eyebrow")}
+          </span>
+          <h2 className="mt-3 text-3xl font-black text-brown md:text-4xl">
+            {t("trust.title")}
+          </h2>
+          <p className="mt-3 text-brown-mid">{t("trust.subtitle")}</p>
+        </div>
 
         {/* Badges row */}
         <div className="mx-auto mb-10 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4">
