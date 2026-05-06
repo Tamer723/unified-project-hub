@@ -34,6 +34,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
+  const [dialCode, setDialCode] = useState("+90");
   const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,10 +48,23 @@ export function CheckoutSection({ selection }: Props) {
     return `${base} | ${formatPrice(selection.unitPrice, locale)}`;
   }, [selection, locale, t]);
 
+  const country = COUNTRIES.find((c) => c.dial === dialCode) ?? COUNTRIES[0];
+
   const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length > 0) {
+      if (digits.length < country.min || digits.length > country.max) {
+        e.phone =
+          locale === "ar"
+            ? `رقم الهاتف يجب أن يكون بين ${country.min} و ${country.max} رقمًا`
+            : locale === "tr"
+              ? `Telefon ${country.min}-${country.max} hane olmalı`
+              : `Phone must be ${country.min}-${country.max} digits`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
