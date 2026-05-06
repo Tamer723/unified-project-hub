@@ -69,6 +69,7 @@
     "country_label": "Country",
     "animal_label": "Animal",
     "weight_note": "Price updates with selection",
+    "weight_value": "Approx. weight: {{kg}} kg",
     "features": [
       "Live slaughter and direct distribution",
       "Visual and field documentation",
