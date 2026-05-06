@@ -19,7 +19,9 @@ export type Database = {
           card_meta: Json | null
           created_at: string
           currency: string
+          donor_country: string | null
           donor_email: string
+          donor_ip: string | null
           donor_name: string
           donor_phone: string | null
           expires_at: string | null
@@ -42,7 +44,9 @@ export type Database = {
           card_meta?: Json | null
           created_at?: string
           currency: string
+          donor_country?: string | null
           donor_email: string
+          donor_ip?: string | null
           donor_name: string
           donor_phone?: string | null
           expires_at?: string | null
@@ -65,7 +69,9 @@ export type Database = {
           card_meta?: Json | null
           created_at?: string
           currency?: string
+          donor_country?: string | null
           donor_email?: string
+          donor_ip?: string | null
           donor_name?: string
           donor_phone?: string | null
           expires_at?: string | null
@@ -179,6 +185,9 @@ export type Database = {
           display_order: number
           id: string
           image_url: string | null
+          image_url_ar: string | null
+          image_url_en: string | null
+          image_url_tr: string | null
           pricing_type: string
           title_ar: string | null
           title_en: string | null
@@ -193,6 +202,9 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          image_url_ar?: string | null
+          image_url_en?: string | null
+          image_url_tr?: string | null
           pricing_type: string
           title_ar?: string | null
           title_en?: string | null
@@ -207,6 +219,9 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          image_url_ar?: string | null
+          image_url_en?: string | null
+          image_url_tr?: string | null
           pricing_type?: string
           title_ar?: string | null
           title_en?: string | null
