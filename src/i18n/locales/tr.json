@@ -79,6 +79,20 @@
     },
     "animals": { "sheep": "Koyun / Keçi", "cow_share": "1/7 Büyükbaş Hisse" }
   },
+  "checkout": {
+    "eyebrow": "Vekaletinizi tamamlayın",
+    "title": "Üç adımda emanetiniz tamamlanır",
+    "subtitle": "Yolunuzu seçin, bilgilerinizi girin ve ödemeye geçin — hepsi tek yerde.",
+    "steps": { "select": "Seçim", "info": "Bilgileriniz", "pay": "Ödeme" },
+    "selected_track": "Seçilen yol",
+    "next": "İleri →",
+    "back": "← Geri",
+    "pay_cta": "Ödemeye devam et →",
+    "secure": "Güvenli şifreli ödeme",
+    "agree": "Kuds Vakfı'nı seçilen seçeneğe göre kurban kesmeye yetkili kılıyorum ve uygulama sonrası belgeleri almak istiyorum.",
+    "total": "Genel toplam",
+    "select_first": "Başlamak için yukarıdan bir yol seçin"
+  },
   "form": {
     "title": "Kurban Vekaletini Tamamla",
     "steps": { "info": "Bilgileriniz", "pay": "Ödeme" },
