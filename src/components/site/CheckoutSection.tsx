@@ -27,6 +27,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
+  const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
