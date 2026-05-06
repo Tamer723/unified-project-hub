@@ -134,32 +134,44 @@ export type Database = {
         Row: {
           active: boolean
           base_price: number
+          code: string | null
           created_at: string
           currency: string
           display_order: number
           id: string
           image_url: string | null
           pricing_type: string
+          title_ar: string | null
+          title_en: string | null
+          title_tr: string | null
         }
         Insert: {
           active?: boolean
           base_price: number
+          code?: string | null
           created_at?: string
           currency?: string
           display_order?: number
           id?: string
           image_url?: string | null
           pricing_type: string
+          title_ar?: string | null
+          title_en?: string | null
+          title_tr?: string | null
         }
         Update: {
           active?: boolean
           base_price?: number
+          code?: string | null
           created_at?: string
           currency?: string
           display_order?: number
           id?: string
           image_url?: string | null
           pricing_type?: string
+          title_ar?: string | null
+          title_en?: string | null
+          title_tr?: string | null
         }
         Relationships: []
       }
