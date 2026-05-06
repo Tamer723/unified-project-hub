@@ -101,13 +101,25 @@ Deno.serve(async (req) => {
     const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken, lang, origin: clientOrigin } = parsed.data;
     const ALLOWED_ORIGINS = [
       "https://campaign.4c.studio",
-      "https://the-app-orchestrator.lovable.app",
-      "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
     ];
-    const safeOrigin = clientOrigin && (ALLOWED_ORIGINS.includes(clientOrigin) || /\.lovable\.(app|dev)$/.test(new URL(clientOrigin).host)) ? clientOrigin : null;
+    const safeOrigin = clientOrigin && ALLOWED_ORIGINS.includes(clientOrigin) ? clientOrigin : null;
 
-    // CAPTCHA
+    // CAPTCHA + donor IP/country
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    let donorCountry = req.headers.get("cf-ipcountry") || req.headers.get("x-vercel-ip-country") || null;
+    if (!donorCountry && ip) {
+      try {
+        const ctrl = new AbortController();
+        const tm = setTimeout(() => ctrl.abort(), 1500);
+        const r = await fetch(`https://ipapi.co/${ip}/country/`, { signal: ctrl.signal });
+        clearTimeout(tm);
+        if (r.ok) {
+          const txt = (await r.text()).trim();
+          if (/^[A-Z]{2}$/.test(txt)) donorCountry = txt;
+        }
+      } catch (_e) { /* ignore */ }
+    }
+    if (donorCountry) donorCountry = donorCountry.toUpperCase();
     if (!(await verifyTurnstile(captchaToken, ip))) {
       return new Response(JSON.stringify({ responseCode: "403", responseMessage: "CAPTCHA verification failed" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -199,6 +211,8 @@ Deno.serve(async (req) => {
       status: activeProvider === "mock" ? "awaiting_3ds" : "pending",
       provider: activeProvider, provider_txn_id: txnId,
       card_meta: card ? { last4, bin, brand, holder: card.holder } : null,
+      donor_ip: ip,
+      donor_country: donorCountry,
       expires_at,
       metadata: { lang, origin: safeOrigin },
     }).select("id").single();

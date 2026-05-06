@@ -18,6 +18,8 @@ export type Order = {
   failure_reason: string | null;
   card_meta: any;
   intention: string | null;
+  donor_ip: string | null;
+  donor_country: string | null;
   products?: { code: string | null; title_ar: string | null; title_en: string | null } | null;
   product_price_matrix?: { country_code: string; animal_code: string } | null;
 };

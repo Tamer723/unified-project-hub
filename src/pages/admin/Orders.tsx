@@ -21,6 +21,11 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 const ANIMAL_EMOJI: Record<string, string> = { sheep: "🐏", cow_share: "🐄" };
 
+function isoFlag(code?: string | null): string {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
 const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
 
 export default function Orders() {
@@ -30,6 +35,7 @@ export default function Orders() {
   const [status, setStatus] = useState("all");
   const [country, setCountry] = useState("all");
   const [animal, setAnimal] = useState("all");
+  const [donorCountry, setDonorCountry] = useState("all");
   const [active, setActive] = useState<Order | null>(null);
 
   const countryName = (code?: string | null) =>
@@ -37,25 +43,33 @@ export default function Orders() {
   const animalName = (code?: string | null) =>
     code ? `${ANIMAL_EMOJI[code] ?? ""} ${t(`track3.animals.${code}`, code)}`.trim() : "—";
 
+  const donorCountries = useMemo(() => {
+    const set = new Set<string>();
+    (orders ?? []).forEach((o) => o.donor_country && set.add(o.donor_country));
+    return Array.from(set).sort();
+  }, [orders]);
+
   const filtered = useMemo(() => {
     let r = orders ?? [];
     if (status !== "all") r = r.filter((o) => o.status === status);
     if (country !== "all") r = r.filter((o) => o.product_price_matrix?.country_code === country);
     if (animal !== "all") r = r.filter((o) => o.product_price_matrix?.animal_code === animal);
+    if (donorCountry !== "all") r = r.filter((o) => o.donor_country === donorCountry);
     if (search) {
       const q = search.toLowerCase();
       r = r.filter(
         (o) =>
           o.donor_name.toLowerCase().includes(q) ||
           o.donor_email.toLowerCase().includes(q) ||
-          (o.provider_txn_id ?? "").toLowerCase().includes(q),
+          (o.provider_txn_id ?? "").toLowerCase().includes(q) ||
+          (o.donor_ip ?? "").toLowerCase().includes(q),
       );
     }
     return r;
-  }, [orders, status, country, animal, search]);
+  }, [orders, status, country, animal, donorCountry, search]);
 
   const exportCsv = () => {
-    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
+    const headers = ["id", "created_at", "donor_name", "donor_email", "donor_ip", "donor_country", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
     const rows = filtered.map((o) => {
       const cc = o.product_price_matrix?.country_code ?? "";
       const ac = o.product_price_matrix?.animal_code ?? "";
@@ -64,6 +78,8 @@ export default function Orders() {
         o.created_at,
         o.donor_name,
         o.donor_email,
+        o.donor_ip ?? "",
+        o.donor_country ?? "",
         o.products?.code ?? "",
         trackLabel(o),
         cc,
@@ -139,6 +155,15 @@ export default function Orders() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={donorCountry} onValueChange={setDonorCountry}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="دولة المتبرع" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل دول المتبرعين</SelectItem>
+              {donorCountries.map((c) => (
+                <SelectItem key={c} value={c}>{isoFlag(c)} {c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
@@ -152,6 +177,7 @@ export default function Orders() {
                 <tr className="text-xs text-muted-foreground border-b">
                   <th className="text-start py-2 font-medium">التاريخ</th>
                   <th className="text-start py-2 font-medium">المتبرع</th>
+                  <th className="text-start py-2 font-medium">المصدر</th>
                   <th className="text-start py-2 font-medium">المسار</th>
                   <th className="text-start py-2 font-medium">الكمية</th>
                   <th className="text-start py-2 font-medium">المبلغ</th>
@@ -176,6 +202,13 @@ export default function Orders() {
                       <td className="py-2">
                         <div>{o.donor_name}</div>
                         <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
+                      </td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-1 text-sm">
+                          <span>{isoFlag(o.donor_country) || "🏳️"}</span>
+                          <span className="font-mono text-[10px]">{o.donor_country ?? "—"}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">{o.donor_ip ?? "—"}</div>
                       </td>
                       <td className="py-2">
                         <div className="font-medium">{trackLabel(o)}</div>
@@ -219,6 +252,8 @@ export default function Orders() {
             <div className="mt-6 space-y-3 text-sm">
               <Row k="ID" v={active.id} />
               <Row k="الحالة" v={active.status} />
+              <Row k="IP المتبرع" v={active.donor_ip ?? "—"} />
+              <Row k="دولة المتبرع" v={active.donor_country ? `${isoFlag(active.donor_country)} ${active.donor_country}` : "—"} />
               <Row k="المسار" v={`${trackLabel(active)}${active.products?.code ? ` (${active.products.code})` : ""}`} />
               {active.product_price_matrix && (
                 <>

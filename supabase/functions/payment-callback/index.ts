@@ -24,8 +24,6 @@ async function hashV3(params: Record<string, string>, storeKey: string): Promise
 
 const ALLOWED_ORIGINS = [
   "https://campaign.4c.studio",
-  "https://the-app-orchestrator.lovable.app",
-  "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
 ];
 
 function safeOriginFrom(value: string | null | undefined): string | null {
@@ -34,7 +32,6 @@ function safeOriginFrom(value: string | null | undefined): string | null {
     const u = new URL(value);
     const host = u.host;
     if (ALLOWED_ORIGINS.includes(`${u.protocol}//${host}`)) return `${u.protocol}//${host}`;
-    if (/\.lovable\.(app|dev)$/.test(host)) return `${u.protocol}//${host}`;
   } catch { /* ignore */ }
   return null;
 }
