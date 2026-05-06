@@ -397,6 +397,11 @@ export function CheckoutSection({ selection }: Props) {
                             clearError("cc_number");
                           }
                         }}
+                        onBlur={() => {
+                          if (cardNumber && !isValidCardNumber(cardNumber)) {
+                            setErrors((p) => ({ ...p, cc_number: locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number" }));
+                          }
+                        }}
                         className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
                       <div className="absolute inset-y-0 end-3 flex items-center">
