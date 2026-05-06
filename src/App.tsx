@@ -19,6 +19,7 @@ import Products from "./pages/admin/Products.tsx";
 import Pricing from "./pages/admin/Pricing.tsx";
 import Users from "./pages/admin/Users.tsx";
 import Audit from "./pages/admin/Audit.tsx";
+import Payments from "./pages/admin/Payments.tsx";
 
 const queryClient = new QueryClient();
 
