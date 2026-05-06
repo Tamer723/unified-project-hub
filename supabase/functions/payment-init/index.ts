@@ -98,7 +98,13 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken } = parsed.data;
+    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken, lang, origin: clientOrigin } = parsed.data;
+    const ALLOWED_ORIGINS = [
+      "https://campaign.4c.studio",
+      "https://the-app-orchestrator.lovable.app",
+      "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
+    ];
+    const safeOrigin = clientOrigin && (ALLOWED_ORIGINS.includes(clientOrigin) || /\.lovable\.(app|dev)$/.test(new URL(clientOrigin).host)) ? clientOrigin : null;
 
     // CAPTCHA
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
