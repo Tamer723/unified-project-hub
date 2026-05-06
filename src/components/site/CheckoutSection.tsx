@@ -435,7 +435,11 @@ export function CheckoutSection({ selection }: Props) {
                         placeholder="123"
                         maxLength={cardBrand === "amex" ? 4 : 3}
                         value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          setCardCvc(v);
+                          if (isValidCvc(v, cardBrand)) clearError("cc_cvc");
+                        }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
                       {errors.cc_cvc && <p className="mt-1 text-xs text-destructive">{errors.cc_cvc}</p>}
