@@ -436,6 +436,11 @@ export function CheckoutSection({ selection }: Props) {
                             clearError("cc_exp");
                           }
                         }}
+                        onBlur={() => {
+                          if (cardExpiry && !isValidExpiry(cardExpiry)) {
+                            setErrors((p) => ({ ...p, cc_exp: locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry" }));
+                          }
+                        }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
                       {errors.cc_exp && <p className="mt-1 text-xs text-destructive">{errors.cc_exp}</p>}
