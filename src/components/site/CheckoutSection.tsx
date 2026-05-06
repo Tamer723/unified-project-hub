@@ -146,15 +146,25 @@ export function CheckoutSection({ selection }: Props) {
     setStep(2);
   };
 
+  const cardNumberValid = isValidCardNumber(cardNumber);
+  const cardExpiryValid = isValidExpiry(cardExpiry);
+  const cardCvcValid = isValidCvc(cardCvc, cardBrand);
+  const cardFormValid = cardNumberValid && cardExpiryValid && cardCvcValid;
+
+  const clearError = (key: string) =>
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
+
   const validateCard = () => {
     const e: Record<string, string> = {};
-    if (cardHolder.trim().length < 2)
-      e.cc_name = locale === "ar" ? "أدخل اسم حامل البطاقة" : locale === "tr" ? "Kart sahibi adı" : "Cardholder name";
-    if (!isValidCardNumber(cardNumber))
+    if (!cardNumberValid)
       e.cc_number = locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number";
-    if (!isValidExpiry(cardExpiry))
+    if (!cardExpiryValid)
       e.cc_exp = locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry";
-    if (!isValidCvc(cardCvc, cardBrand))
+    if (!cardCvcValid)
       e.cc_cvc = "CVC";
     setErrors((prev) => ({ ...prev, ...e }));
     return Object.keys(e).length === 0;
