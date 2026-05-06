@@ -160,12 +160,14 @@ export function CheckoutSection({ selection }: Props) {
     return Object.keys(e).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selection) {
       toast.error(t("checkout.select_first"));
       return;
     }
     if (!validateInfo()) return;
+    // Re-fetch active provider before moving to payment step so the form matches the current backend setting
+    await fetchProvider();
     setStep(2);
     requestAnimationFrame(() => {
       const el = document.getElementById("checkout");
