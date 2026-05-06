@@ -457,7 +457,7 @@ export function CheckoutSection({ selection }: Props) {
                 </div>
               )}
 
-              {cardOnSite && (
+              {providerReady && cardOnSite && (
               <div className="rounded-2xl border border-sand/40 bg-card p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-brown">
