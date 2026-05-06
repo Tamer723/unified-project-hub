@@ -112,7 +112,16 @@ Deno.serve(async (req) => {
     const brand = detectBrand(digits);
 
     // 3. Server-side price resolution (NEVER trust client unit_price)
-    let resolvedProduct = product_id;
+    let resolvedProduct: string | null = product_id ?? null;
+    if (!resolvedProduct && !matrix_id && track_code) {
+      const { data: tp } = await supabase
+        .from("products")
+        .select("id")
+        .eq("code", track_code)
+        .eq("active", true)
+        .maybeSingle();
+      resolvedProduct = tp?.id ?? null;
+    }
     let serverUnitPrice: number | null = null;
     let serverCurrency: string = currency;
 
