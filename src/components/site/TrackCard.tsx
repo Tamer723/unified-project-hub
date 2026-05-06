@@ -62,6 +62,9 @@ export function TrackCard({
     : (t(`${id}.features`, { returnObjects: true }) as string[]);
 
   const unitPrice = resolveTrackPrice(id, pricingData, country, animal);
+  const weightKg = id === "track3" && country && animal
+    ? resolveTrackWeight(pricingData, country, animal)
+    : null;
 
   const handleChoose = () => {
     onChoose({
