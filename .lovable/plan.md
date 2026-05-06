@@ -1,65 +1,49 @@
-## ١) تسجيل IP وعلم دولة المتبرع
+## المشكلة
 
-**قاعدة البيانات (هجرة):**
-- إضافة عمودين على `orders`: `donor_ip text`, `donor_country text` (رمز ISO).
-- تحديث سياسة RLS الخاصة بـ INSERT للسماح بالحقلين الاختياريين (مع إبقائهما NULL من العميل).
+عند تدفق `iyzico_3ds` نعرض صفحة التحدي داخل `<iframe>`. بعد إدخال OTP، تُرجع `payment-callback` استجابة `302` فيتم التوجيه **داخل الـ iframe** بدل النافذة الأم — فتظهر صفحة النجاح داخل البوب-أب.
 
-**Edge Function (`create-payment` و`payment-init`):**
-- استخراج `IP` من `x-forwarded-for` (أول قيمة).
-- استخراج رمز الدولة من `cf-ipcountry` إن وُجد، وإلا fallback لـ `https://ipapi.co/{ip}/country/` بمهلة 1.5s ضمن try/catch.
-- تمرير `donor_ip` و`donor_country` ضمن `insert` للطلب.
+## الحل الشامل
 
-**الواجهة (`src/pages/admin/Orders.tsx`):**
-- عمود جديد "المصدر" يعرض: علم الدولة (Emoji محسوب من الرمز) + رمز الدولة + IP (mono صغير).
-- إضافة الحقلين في `Sheet` التفاصيل وفي تصدير CSV.
-- فلتر "دولة المتبرع" في الشريط.
-- تحديث نوع `Order` في `src/hooks/useAdminStats.ts`.
+استبدال جميع الـ `302 redirect` في `payment-callback` بصفحة HTML صغيرة "تكسر" الـ iframe إلى النافذة الأم. يعمل في كل التدفقات (iyzico الآن، NestPay/زراعات بنك مستقبلاً، وأي بوابة جديدة) بدون آثار جانبية على التدفقات التي تعمل في صفحة كاملة.
 
-**ملاحظة قانونية:** سأضيف نصًا مترجمًا في نموذج التبرع يوضح أن IP يُسجَّل لأغراض الأمان.
+### الملف المعدَّل
 
----
+**`supabase/functions/payment-callback/index.ts`**
 
-## ٢) دعم الصور الحقيقية متعددة اللغات (تحضير البنية فقط)
+1. إضافة دالة:
+```ts
+function breakoutRedirect(url: string): Response {
+  const safe = url.replace(/"/g, "&quot;");
+  const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>Redirecting…</title>
+<meta http-equiv="refresh" content="0;url=${safe}">
+<script>
+(function(){
+  try { (window.top || window).location.replace(${JSON.stringify(url)}); }
+  catch(e){ window.location.replace(${JSON.stringify(url)}); }
+})();
+</script></head>
+<body style="font-family:system-ui;text-align:center;padding:2rem">
+<p>جارٍ التحويل…</p>
+<p><a href="${safe}" target="_top">اضغط هنا للمتابعة</a></p>
+</body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+```
 
-لن أبدّل الصور الآن — سترفعها لاحقًا. سأضيف البنية:
-- helper `localizedAsset(name)` في `src/lib/utils.ts` يُرجع المسار حسب `i18n.language` (مثل `hero-ar.jpg`).
-- أعمدة `image_url_ar`, `image_url_tr`, `image_url_en` على جدول `products` (مع fallback إلى `image_url`).
-- تحديث `src/pages/admin/Products.tsx` لتعديل الصور لكل لغة.
-- قسم في `README.md` يشرح كيفية استبدال الصور (ثلاث استراتيجيات: صورة موحّدة، صورة لكل لغة، فيديو + ترجمات `.vtt`).
+2. استبدال **كل** استدعاءات `redirect(...)` بـ `breakoutRedirect(...)` في الملف (مسار iyzico، مسار NestPay، وكتلة `catch` العامة). يمكن إبقاء `redirect()` القديمة كـ alias محذوف أو حذفها.
 
----
+### ملاحظة على iframe sandbox
 
-## ٣) إزالة آثار Lovable
+في `src/components/site/CheckoutSection.tsx` السطر 688، الـ `sandbox` الحالي:
+`allow-scripts allow-forms allow-same-origin allow-top-navigation`
 
-**إزالة آمنة بدون أثر على الإنتاج:**
+`allow-top-navigation` كافٍ لاستدعاء `window.top.location.replace` بعد تفاعل المستخدم (ضغط OTP). لا تغيير مطلوب، لكن سنُضيف `allow-top-navigation-by-user-activation` احتياطاً لبعض المتصفحات.
 
-| الموقع | التغيير |
-|---|---|
-| `package.json` | إزالة `lovable-tagger` |
-| `vite.config.ts` | إزالة `componentTagger` |
-| `README.md` | إعادة كتابته بمحتوى المشروع (حملة الأضحية / 4C Studio) |
-| `index.html` | تبديل `og:image` و`twitter:image` بـ placeholder محلي `/og-image.jpg` (ستستبدله لاحقًا بصورتك) |
-| `payment-callback/index.ts` | حذف دومينات `*.lovable.app` من `ALLOWED_ORIGINS` |
-| `payment-init/index.ts` | نفس التعديل |
-| `src/pages/admin/Payments.tsx` | تغيير "Lovable Cloud" إلى "لوحة الباك-إند" |
+## بدون تغييرات أخرى
 
-**يحتاج بديلاً قبل الإزالة:**
-
-- `notify-telegram/index.ts` يستخدم `connector-gateway.lovable.dev` + `LOVABLE_API_KEY`. سأعيد كتابته ليستدعي `https://api.telegram.org/bot{TOKEN}/sendMessage` مباشرة. **أحتاج منك Bot Token من @BotFather** — سأطلبه عبر `add_secret` (`TELEGRAM_BOT_TOKEN`) قبل تعديل الدالة.
-
-**تحذيرات:**
-- حذف `componentTagger` يُعطّل ميزة "Edit with Lovable" داخل المعاينة الحية لـ Lovable. الإنتاج على `campaign.4c.studio` لن يتأثر.
-- شعار "Edit with Lovable" على الموقع المنشور يُخفى من إعدادات النشر (يتطلب Pro). أخبرني إن أردت تفعيله.
-- الدومين `*.lovable.app` لا يمكن حذفه من المنصة، لكن بعد ربط `campaign.4c.studio` يمكن تجاهله.
-
----
-
-## خطة التنفيذ بالترتيب
-
-1. هجرة DB: `donor_ip`, `donor_country` على `orders` + `image_url_{ar,tr,en}` على `products`.
-2. تعديل `create-payment` + `payment-init` لالتقاط IP/country.
-3. تحديث `useAdminStats.ts` + `Orders.tsx` (عمود + فلتر + sheet + CSV).
-4. helper `localizedAsset()` + تحديث `Products.tsx` admin لإدارة الصور لكل لغة.
-5. تنظيف Lovable: `package.json`, `vite.config.ts`, `README.md`, `index.html`, الدومينات في الـ functions، نص Payments.tsx.
-6. طلب `TELEGRAM_BOT_TOKEN` ثم إعادة كتابة `notify-telegram` للاتصال المباشر بـ Telegram API.
-7. (اختياري) إخفاء شعار Lovable من النشر — أخبرني.
+- لا تعديل على `payment-init` ولا على قاعدة البيانات.
+- التدفقات التي تعمل في صفحة كاملة (NestPay POST كامل) ستعمل كما كانت — لأن `window.top === window` فيها.

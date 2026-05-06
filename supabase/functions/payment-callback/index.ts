@@ -44,7 +44,28 @@ function siteOrigin(req: Request, queryOrigin: string | null, metaOrigin: string
 }
 
 function redirect(url: string): Response {
-  return new Response(null, { status: 302, headers: { ...corsHeaders, Location: url } });
+  // HTML breakout redirect — works whether the callback is rendered inside a 3DS
+  // iframe (iyzico) or a full page (NestPay/Ziraat hosted). Uses window.top to
+  // escape the iframe; falls back to window.location and <meta refresh>.
+  const safe = url.replace(/"/g, "&quot;");
+  const jsUrl = JSON.stringify(url);
+  const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>Redirecting…</title>
+<meta http-equiv="refresh" content="0;url=${safe}">
+<script>
+(function(){
+  try { (window.top || window).location.replace(${jsUrl}); }
+  catch (e) { window.location.replace(${jsUrl}); }
+})();
+</script></head>
+<body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:2rem">
+<p>جارٍ التحويل… / Redirecting…</p>
+<p><a href="${safe}" target="_top">اضغط هنا للمتابعة</a></p>
+</body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+  });
 }
 
 Deno.serve(async (req) => {
