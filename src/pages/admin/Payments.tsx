@@ -212,7 +212,7 @@ export default function Payments() {
                 <AlertTitle>لا يمكن تفعيل هذه البوابة</AlertTitle>
                 <AlertDescription className="mt-2 text-sm">
                   الأسرار التالية مفقودة: <strong>{missingList.join("، ")}</strong>.
-                  أضِفها من إعدادات Lovable Cloud (Backend → Secrets) ثم اضغط "إعادة فحص الأسرار".
+                  أضِفها من إعدادات لوحة الباك-إند (Backend → Secrets) ثم اضغط "إعادة فحص الأسرار".
                 </AlertDescription>
               </Alert>
             )}
