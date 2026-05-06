@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       .from("orders")
       .insert({
         product_id: resolvedProduct,
-        matrix_id: matrix_id ?? null,
+        matrix_id: resolvedMatrixId,
         donor_name: donor.name,
         donor_email: donor.email,
         donor_phone: donor.phone ?? null,
