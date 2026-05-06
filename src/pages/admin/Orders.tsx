@@ -21,6 +21,11 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 const ANIMAL_EMOJI: Record<string, string> = { sheep: "🐏", cow_share: "🐄" };
 
+function isoFlag(code?: string | null): string {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
 const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
 
 export default function Orders() {
