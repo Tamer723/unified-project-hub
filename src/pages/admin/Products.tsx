@@ -18,6 +18,10 @@ type Product = {
   title_ar: string | null;
   title_en: string | null;
   title_tr: string | null;
+  image_url: string | null;
+  image_url_ar: string | null;
+  image_url_en: string | null;
+  image_url_tr: string | null;
 };
 
 export default function Products() {
