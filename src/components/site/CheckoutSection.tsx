@@ -19,27 +19,30 @@ import { formatPrice, paymentCurrency } from "@/lib/pricing";
 import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Turnstile } from "./Turnstile";
+import { AsYouType, getCountries, getCountryCallingCode, isValidPhoneNumber, getExampleNumber } from "libphonenumber-js";
+import examples from "libphonenumber-js/examples.mobile.json";
+import type { CountryCode } from "libphonenumber-js";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
-const COUNTRIES = [
-  { code: "TR", flag: "🇹🇷", dial: "+90", min: 10, max: 10 },
-  { code: "SA", flag: "🇸🇦", dial: "+966", min: 9, max: 9 },
-  { code: "AE", flag: "🇦🇪", dial: "+971", min: 9, max: 9 },
-  { code: "EG", flag: "🇪🇬", dial: "+20", min: 10, max: 10 },
-  { code: "JO", flag: "🇯🇴", dial: "+962", min: 9, max: 9 },
-  { code: "KW", flag: "🇰🇼", dial: "+965", min: 8, max: 8 },
-  { code: "QA", flag: "🇶🇦", dial: "+974", min: 8, max: 8 },
-  { code: "BH", flag: "🇧🇭", dial: "+973", min: 8, max: 8 },
-  { code: "OM", flag: "🇴🇲", dial: "+968", min: 8, max: 8 },
-  { code: "PS", flag: "🇵🇸", dial: "+970", min: 9, max: 9 },
-  { code: "LB", flag: "🇱🇧", dial: "+961", min: 7, max: 8 },
-  { code: "SY", flag: "🇸🇾", dial: "+963", min: 9, max: 9 },
-  { code: "IQ", flag: "🇮🇶", dial: "+964", min: 10, max: 10 },
-  { code: "YE", flag: "🇾🇪", dial: "+967", min: 9, max: 9 },
-  { code: "GB", flag: "🇬🇧", dial: "+44", min: 10, max: 10 },
-  { code: "US", flag: "🇺🇸", dial: "+1", min: 10, max: 10 },
-];
+function flagEmoji(code: string): string {
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
+const PRIORITY_CODES: CountryCode[] = ["TR","SA","AE","EG","JO","KW","QA","BH","OM","PS","LB","SY","IQ","YE","GB","US"];
+
+const COUNTRIES = (() => {
+  const all = getCountries().map((code) => ({
+    code: code as CountryCode,
+    flag: flagEmoji(code),
+    dial: `+${getCountryCallingCode(code as CountryCode)}`,
+  }));
+  const priority = PRIORITY_CODES
+    .map((c) => all.find((x) => x.code === c))
+    .filter(Boolean) as typeof all;
+  const rest = all.filter((c) => !PRIORITY_CODES.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
+  return [...priority, ...rest];
+})();
 
 type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "troy" | "unknown";
 
@@ -94,7 +97,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
-  const [dialCode, setDialCode] = useState("+90");
+  const [countryCode, setCountryCode] = useState<CountryCode>("TR");
   const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const cardBrand = detectCardBrand(cardNumber.replace(/\D/g, ""));
@@ -115,23 +118,23 @@ export function CheckoutSection({ selection }: Props) {
     return `${base} | ${formatPrice(selection.unitPrice, locale)}`;
   }, [selection, locale, t]);
 
-  const country = COUNTRIES.find((c) => c.dial === dialCode) ?? COUNTRIES[0];
+  const country = COUNTRIES.find((c) => c.code === countryCode) ?? COUNTRIES[0];
+
+  const phoneInvalidMsg = locale === "ar" ? "رقم الهاتف غير صالح" : locale === "tr" ? "Geçersiz telefon" : "Invalid phone number";
+
+  const phoneExample = (() => {
+    try {
+      const ex = getExampleNumber(countryCode, examples as never);
+      return ex?.formatNational() ?? "";
+    } catch { return ""; }
+  })();
 
   const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length > 0) {
-      if (digits.length < country.min || digits.length > country.max) {
-        const range = country.min === country.max ? `${country.min}` : `${country.min}-${country.max}`;
-        e.phone =
-          locale === "ar"
-            ? `رقم الهاتف يجب أن يتكون من ${range} رقمًا`
-            : locale === "tr"
-              ? `Telefon ${range} hane olmalı`
-              : `Phone must be ${range} digits`;
-      }
+    if (phone.trim().length > 0 && !isValidPhoneNumber(phone, countryCode)) {
+      e.phone = phoneInvalidMsg;
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -192,7 +195,7 @@ export function CheckoutSection({ selection }: Props) {
 
       const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
         body: {
-          donor: { name, email, phone: phone ? `${dialCode}${phone.replace(/\s/g, "")}` : null },
+          donor: { name, email, phone: phone ? `+${getCountryCallingCode(countryCode)}${phone.replace(/\D/g, "")}` : null },
           intention: intention || null,
           quantity,
           unit_price: selection.unitPrice,
@@ -260,6 +263,7 @@ export function CheckoutSection({ selection }: Props) {
                   placeholder={locale === "ar" ? "اكتب اسمك الكامل" : "Your full name"}
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (e.target.value.trim().length >= 2) clearError("name"); }}
+                  onBlur={() => { if (name.trim().length > 0 && name.trim().length < 2) setErrors((p) => ({ ...p, name: t("form.errors.name") })); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
@@ -274,6 +278,7 @@ export function CheckoutSection({ selection }: Props) {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) clearError("email"); }}
+                  onBlur={() => { if (email.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErrors((p) => ({ ...p, email: t("form.errors.email") })); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
@@ -296,15 +301,28 @@ export function CheckoutSection({ selection }: Props) {
                   {t("form.phone")}
                 </Label>
                 <div dir="ltr" className="mt-2 flex gap-2">
-                  <Select value={dialCode} onValueChange={setDialCode}>
-                    <SelectTrigger className="h-12 w-[110px] shrink-0 rounded-xl bg-cream-dark/60">
-                      <SelectValue />
+                  <Select
+                    value={countryCode}
+                    onValueChange={(v) => {
+                      const next = v as CountryCode;
+                      setCountryCode(next);
+                      // Reformat existing phone to new country
+                      const digits = phone.replace(/\D/g, "");
+                      setPhone(digits ? new AsYouType(next).input(digits) : "");
+                      clearError("phone");
+                    }}
+                  >
+                    <SelectTrigger className="h-12 w-[130px] shrink-0 rounded-xl bg-cream-dark/60">
+                      <SelectValue>
+                        <span className="mr-1">{country.flag}</span>
+                        {country.dial}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.dial}>
+                        <SelectItem key={c.code} value={c.code}>
                           <span className="mr-2">{c.flag}</span>
-                          {c.dial}
+                          {c.code} {c.dial}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -313,9 +331,18 @@ export function CheckoutSection({ selection }: Props) {
                     id="phone"
                     type="tel"
                     inputMode="numeric"
-                    placeholder="5XX XXX XX XX"
+                    placeholder={phoneExample || "Phone number"}
                     value={phone}
-                    onChange={(e) => { const v = e.target.value.replace(/[^\d\s]/g, ""); setPhone(v); clearError("phone"); }}
+                    onChange={(e) => {
+                      const formatted = new AsYouType(countryCode).input(e.target.value);
+                      setPhone(formatted);
+                      if (!formatted || isValidPhoneNumber(formatted, countryCode)) clearError("phone");
+                    }}
+                    onBlur={() => {
+                      if (phone.trim().length > 0 && !isValidPhoneNumber(phone, countryCode)) {
+                        setErrors((p) => ({ ...p, phone: phoneInvalidMsg }));
+                      }
+                    }}
                     className="h-12 flex-1 rounded-xl bg-cream-dark/60 text-left"
                   />
                 </div>
