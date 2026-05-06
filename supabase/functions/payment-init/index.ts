@@ -109,11 +109,12 @@ Deno.serve(async (req) => {
     // Active provider
     const { data: settings } = await supabase
       .from("payment_settings").select("active_provider, test_mode").limit(1).maybeSingle();
-    const activeProvider = (settings?.active_provider ?? "mock") as "mock" | "nestpay_3d" | "nestpay_hosting";
+    const activeProvider = (settings?.active_provider ?? "mock") as "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
     const testMode = settings?.test_mode ?? true;
 
-    // Card required for mock + nestpay_3d, NOT for nestpay_hosting
-    const needsCard = activeProvider !== "nestpay_hosting";
+    // Card required for mock + nestpay_3d + iyzico_3ds, NOT for hosted flows
+    const hostedFlow = activeProvider === "nestpay_hosting" || activeProvider === "iyzico_checkout";
+    const needsCard = !hostedFlow;
     if (needsCard && !card) {
       return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Card required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
