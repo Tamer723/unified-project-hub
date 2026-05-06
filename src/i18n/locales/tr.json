@@ -69,6 +69,7 @@
     "country_label": "Ülke",
     "animal_label": "Hayvan",
     "weight_note": "Fiyat seçime göre güncellenir",
+    "weight_value": "Yaklaşık ağırlık: {{kg}} kg",
     "features": [
       "Canlı kesim ve doğrudan dağıtım",
       "Görsel ve saha belgelemesi",
