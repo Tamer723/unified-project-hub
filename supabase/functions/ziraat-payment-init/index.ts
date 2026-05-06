@@ -8,7 +8,17 @@ const corsHeaders = {
 };
 
 const Body = z.object({
-  order_id: z.string().uuid(),
+  donor: z.object({
+    name: z.string().min(2).max(80),
+    email: z.string().email(),
+    phone: z.string().max(40).optional().nullable(),
+  }),
+  intention: z.string().max(200).optional().nullable(),
+  quantity: z.number().int().min(1).max(100),
+  unit_price: z.number().int().min(1),
+  currency: z.enum(["USD", "TRY"]),
+  product_id: z.string().uuid().optional().nullable(),
+  matrix_id: z.string().uuid().optional().nullable(),
   card: z.object({
     number: z.string().min(13).max(25),
     holder: z.string().min(2).max(80),
@@ -43,62 +53,76 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { order_id, card } = parsed.data;
+    const { donor, intention, quantity, unit_price, currency, product_id, matrix_id, card } = parsed.data;
     const digits = card.number.replace(/\D/g, "");
     const last4 = digits.slice(-4);
     const bin = digits.slice(0, 6);
     const brand = detectBrand(digits);
 
-    const { data: order, error: oErr } = await supabase
-      .from("orders")
-      .select("id, status, total_amount, currency")
-      .eq("id", order_id)
-      .single();
-
-    if (oErr || !order) {
-      return new Response(JSON.stringify({ responseCode: "404", responseMessage: "Order not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Resolve product_id if not provided (use first active product as fallback for mock).
+    let resolvedProduct = product_id;
+    if (!resolvedProduct) {
+      const { data: p } = await supabase
+        .from("products")
+        .select("id")
+        .eq("active", true)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      resolvedProduct = p?.id ?? null;
     }
-
-    if (order.status !== "pending") {
-      return new Response(JSON.stringify({ responseCode: "409", responseMessage: `Order is in '${order.status}' state` }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-
-    const { error: uErr } = await supabase
-      .from("orders")
-      .update({
-        status: "awaiting_3ds",
-        provider: "mock_ziraat",
-        provider_txn_id: txnId,
-        card_meta: { last4, bin, brand, holder: card.holder },
-      })
-      .eq("id", order_id);
-
-    if (uErr) {
-      console.error("update error:", uErr);
-      return new Response(JSON.stringify({ responseCode: "500", responseMessage: "Failed to update order" }), {
+    if (!resolvedProduct) {
+      return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const threeDSUrl = `/payment/3ds-mock?orderId=${order_id}&txn=${txnId}`;
+    const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const total = unit_price * quantity;
+    const expires_at = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    const { data: order, error: insErr } = await supabase
+      .from("orders")
+      .insert({
+        product_id: resolvedProduct,
+        matrix_id: matrix_id ?? null,
+        donor_name: donor.name,
+        donor_email: donor.email,
+        donor_phone: donor.phone ?? null,
+        quantity,
+        intention: intention ?? null,
+        unit_price,
+        total_amount: total,
+        currency,
+        status: "awaiting_3ds",
+        provider: "mock_ziraat",
+        provider_txn_id: txnId,
+        card_meta: { last4, bin, brand, holder: card.holder },
+        expires_at,
+      })
+      .select("id")
+      .single();
+
+    if (insErr || !order) {
+      console.error("insert error:", insErr);
+      return new Response(JSON.stringify({ responseCode: "500", responseMessage: "Failed to create order" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const threeDSUrl = `/payment/3ds-mock?orderId=${order.id}&txn=${txnId}`;
 
     return new Response(
       JSON.stringify({
         responseCode: "00",
         responseMessage: "Approved",
+        order_id: order.id,
         transactionId: txnId,
         threeDSUrl,
-        amount: order.total_amount,
-        currency: order.currency,
+        amount: total,
+        currency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
