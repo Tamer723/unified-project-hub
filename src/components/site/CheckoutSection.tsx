@@ -118,23 +118,23 @@ export function CheckoutSection({ selection }: Props) {
     return `${base} | ${formatPrice(selection.unitPrice, locale)}`;
   }, [selection, locale, t]);
 
-  const country = COUNTRIES.find((c) => c.dial === dialCode) ?? COUNTRIES[0];
+  const country = COUNTRIES.find((c) => c.code === countryCode) ?? COUNTRIES[0];
+
+  const phoneInvalidMsg = locale === "ar" ? "رقم الهاتف غير صالح" : locale === "tr" ? "Geçersiz telefon" : "Invalid phone number";
+
+  const phoneExample = (() => {
+    try {
+      const ex = getExampleNumber(countryCode, examples as never);
+      return ex?.formatNational() ?? "";
+    } catch { return ""; }
+  })();
 
   const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length > 0) {
-      if (digits.length < country.min || digits.length > country.max) {
-        const range = country.min === country.max ? `${country.min}` : `${country.min}-${country.max}`;
-        e.phone =
-          locale === "ar"
-            ? `رقم الهاتف يجب أن يتكون من ${range} رقمًا`
-            : locale === "tr"
-              ? `Telefon ${range} hane olmalı`
-              : `Phone must be ${range} digits`;
-      }
+    if (phone.trim().length > 0 && !isValidPhoneNumber(phone, countryCode)) {
+      e.phone = phoneInvalidMsg;
     }
     setErrors(e);
     return Object.keys(e).length === 0;
