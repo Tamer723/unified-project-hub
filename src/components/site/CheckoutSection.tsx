@@ -170,6 +170,10 @@ export function CheckoutSection({ selection }: Props) {
       return;
     }
     if (!validateCard()) return;
+    if (!captchaToken) {
+      toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
+      return;
+    }
 
     setPaying(true);
     try {
