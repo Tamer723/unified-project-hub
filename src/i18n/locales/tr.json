@@ -1,62 +1,78 @@
 {
   "header": {
-    "name": "Kudüs Vakfı – Eğitim ve Yardım",
-    "cta": "Kurban Vekâleti Ver",
-    "lang_bar": { "tag": "Kurban Sezonu 1447H" },
-    "nav": { "tracks": "Yollar", "why": "Neden İki Sevap", "trust": "Güven", "faq": "SSS" },
+    "name": "Kudüs Eğitim ve Yardım Vakfı",
+    "brand_short": "Kudüs Vakfı",
+    "brand_sub": "Kurban 2026",
+    "cta": "Kurbanını Bağışla",
+    "lang_bar": { "tag": "Kudüs Eğitim ve Yardım Vakfı" },
+    "nav": { "why": "Neden İki Sevap?", "tracks": "Yollar", "trust": "Belgeler", "faq": "SSS" },
     "countdown": {
-      "prefix": "Kurban Bayramı'na kalan",
-      "days": "gün", "hours": "saat", "minutes": "dk", "seconds": "sn"
+      "prefix": "⏳ Kurban Bayramı öncesi kayıt kapanıyor",
+      "cta": "Şimdi kurbanınızı kaydettirin",
+      "days": "g", "hours": "s", "minutes": "d", "seconds": "sn"
     }
   },
   "hero": {
-    "badge": "Kurban Sezonu 1447H",
-    "title": "Kurbanın, İki Sevap",
-    "subtitle": "Bir sünneti ihya etmenin sevabı ve bir açı doyurmanın sevabı. Kurbanını emanetle keser, Gazze'ye ve İslam dünyasının dört bir yanındaki muhtaçlara ulaştırırız.",
-    "cta_primary": "Hemen Vekâlet Ver",
-    "cta_secondary": "Emanet nasıl ulaşıyor?",
-    "stats": { "sacrifices": "Dağıtılan kurban", "countries": "Ülke", "years": "Sahada yıl" },
-    "float_card": { "label": "Sudan'dan koyun", "value": "5.175 ₺" },
-    "float_badge": "Doğrulanmış kesim belgesi"
+    "badge": "Birlikte Etki Yaratıyoruz",
+    "title": "Kurbanın — İki Sevap",
+    "ayah": "Rabbine namaz kıl ve kurban kes. — Kevser: 2",
+    "subtitle": "Sünneti ihya et ve Gazze'deki ihtiyaç sahiplerine ulaş — tek bağış, iki sevap. Yolunu seç, vekaletini tamamla ve için rahat olsun — kurbanın en muhtaçlara ulaşır.",
+    "cta_primary": "Kurbanını Seç",
+    "cta_secondary": "Nasıl Çalışır?",
+    "stats": { "sacrifices": "kurban gerçekleşti", "countries": "ülke", "years": "sahada yıl" },
+    "float_card": { "label": "+5000 kurban gerçekleşti", "value": "Elhamdülillah" },
+    "float_badge": "Sonradan belgeleme"
   },
   "why": {
     "eyebrow": "Neden İki Sevap?",
-    "title": "Tek Amelde İki Sevap",
-    "subtitle": "Adına kesilen bir kurban ve hiç eti olmayanlara ulaşan et.",
+    "title": "Çünkü kurbanın ibadetle sınırlı kalmaz",
+    "subtitle": "Sünnetin sevabını ve yardımın sevabını tek bağışta birleştiren bir konsept",
     "cards": [
-      { "verse": "\"Rabbin için namaz kıl ve kurban kes.\"", "title": "Sünneti İhya Sevabı", "text": "Kurban ibadetini vakti içinde ve şer'i usûle uygun şekilde adına eda etmek." },
-      { "verse": "\"Onlar yiyeceği yoksula, yetime ve esire yedirirler…\"", "title": "Açı Doyurma Sevabı", "text": "Taze et; Gazze'deki ve dünyanın muhtaç bölgelerindeki ailelere ulaşır." },
-      { "verse": "\"İyilik ve takvada yardımlaşın.\"", "title": "Mazluma Yardım Sevabı", "text": "Kuşatmayı kırmaya ve en muhtaca hayır ulaştırmaya ortaklık." }
+      { "verse": "\"Rabbin için namaz kıl ve kurban kes.\"", "title": "Sünnet Sevabı", "text": "Kurbanın, İslam fıkhına uygun şekilde doğru vakitte yapılan net bir vekalet yoluyla gerçekleştirilir." },
+      { "verse": "\"Onu sevmelerine rağmen yiyeceği yedirirler.\"", "title": "Yardım Sevabı", "text": "Kurbanın, Eid günü Gazze'deki ve diğer bölgelerdeki kuşatılmış ailelere et ve yiyecek olarak ulaşır." },
+      { "verse": "Sizden vekalet, bizden teslimat", "title": "Tek Bağış, İki Sevap", "text": "İbadeti ve yardımı birleştiren tek bir süreç: anla, seç, vekaletini tamamla ve için rahat olsun." }
     ]
   },
   "tracks": {
-    "eyebrow": "Üç doğrulanmış yol",
-    "title": "Kurban Yolunu Seç",
-    "subtitle": "Her yol, tam belgelendirme ile sahibine ulaşır",
-    "popular": "En Çok Tercih",
+    "eyebrow": "Üç Yol",
+    "title": "Yolunuzu Seçin",
+    "subtitle": "Her birinin kendine özgü bir amacı ve vaadi olan üç net yol",
+    "popular": "En Popüler",
     "choose": "Bu Yolu Seç",
     "from": "başlangıç",
     "unit": "kurban başına"
   },
   "track1": {
-    "title": "Sünnete Uy, Gazze'yi Doyur",
-    "tagline": "Afrika'da kesim, eti Gazze'ye",
-    "note": "Sabit fiyat — emanetle uygulanır",
-    "features": ["Afrika'da bir hisse büyükbaş kesimi", "Gazze'de bir aileye et", "Uygulama sonrası fotoğraflı belge"]
+    "title": "Birinci Yol",
+    "tagline": "Afrika'da kes, Gazze'yi besle",
+    "note": "Tek bağış, iki tam sevap",
+    "features": [
+      "Afrika'da inek hissesi kurbanı",
+      "Gazze'de bir aileyi besle (2 kg et)",
+      "Gerçekleştikten sonra belgeleme"
+    ]
   },
   "track2": {
-    "title": "Kurbanın Kuşatmayı Aşıyor",
-    "tagline": "Kesim, konserveleme ve Gazze'ye sevkiyat",
-    "note": "Her kurban için 12 konserve",
-    "features": ["Kesim + konserveleme + sterilizasyon + nakliye", "12 et konservesi Gazze'ye ulaşır", "Sudan'dan Gazze'deki kardeşlerimize"]
+    "title": "İkinci Yol — Konserve",
+    "tagline": "Kurbanın kuşatmayı aşar",
+    "note": "12 kutu et Gazze'ye ulaşır",
+    "features": [
+      "En yüksek helal standartlarına göre kesim",
+      "Sertifikalı fabrikalarda konserve ve sterilizasyon",
+      "Konserveli hâlde doğrudan Gazze'ye"
+    ]
   },
   "track3": {
-    "title": "Canlı Kurbanlar",
-    "tagline": "Ülke ve hayvan seç",
+    "title": "Üçüncü Yol — Canlı Kurban",
+    "tagline": "Emanetiniz sahanın kalbinde",
     "country_label": "Ülke",
     "animal_label": "Hayvan",
     "weight_note": "Fiyat seçime göre güncellenir",
-    "features": ["Koyun veya 1/7 büyükbaş hisse seçeneği", "7 ülkede uygulama", "Yerel olarak ihtiyaç sahiplerine dağıtım"],
+    "features": [
+      "Canlı kesim ve doğrudan dağıtım",
+      "Görsel ve saha belgelemesi",
+      "Teslimatın doğrulanması"
+    ],
     "countries": {
       "JM": "Kudüs", "WB": "Batı Şeria", "LB": "Lübnan",
       "SY": "Suriye", "SD": "Sudan", "YE": "Yemen", "BD": "Bangladeş"
@@ -64,7 +80,7 @@
     "animals": { "sheep": "Koyun / Keçi", "cow_share": "1/7 Büyükbaş Hisse" }
   },
   "form": {
-    "title": "Vekâleti Tamamla",
+    "title": "Kurban Vekaletini Tamamla",
     "steps": { "info": "Bilgileriniz", "pay": "Ödeme" },
     "track": "Seçilen yol",
     "quantity": "Kurban sayısı",
@@ -73,7 +89,7 @@
     "name": "Ad soyad",
     "email": "E-posta",
     "phone": "Telefon (isteğe bağlı)",
-    "intention": "Niyet / isimler (isteğe bağlı)",
+    "intention": "Niyet / İsimler (isteğe bağlı)",
     "consent": "Kurbanımı şer'i hükümlere uygun şekilde benim adıma kesmenize vekâlet veriyorum",
     "next": "İleri", "back": "Geri",
     "continue_pay": "Ödemeye geç",
@@ -85,40 +101,41 @@
     }
   },
   "trust": {
-    "title": "Güven ve Şeffaflık",
-    "subtitle": "Önce Allah'a, sonra size hesap veririz",
+    "title": "Emanetiniz ulaşır, sonra sizi rahatlatırız",
+    "subtitle": "Güveninizi sözlerle değil, gerçek belgelerle inşa ediyoruz",
+    "eyebrow": "Güven ve Belgeleme",
     "badges": [
-      { "label": "Dağıtılan kurban", "value": "5.000+" },
-      { "label": "Yıllık tecrübe", "value": "5+" },
+      { "label": "Kurban gerçekleşti", "value": "+5000" },
+      { "label": "Yıllık tecrübe", "value": "+5" },
       { "label": "Ülke", "value": "7" },
       { "label": "Saha ortağı", "value": "12" }
     ],
     "items": [
-      { "title": "Gerçek saha belgelendirmesi", "desc": "Her kurban için sahadan fotoğraf ve video" },
-      { "title": "Yılların doğrulanmış tecrübesi", "desc": "5 yılı aşkın sürekli yardım çalışması" },
-      { "title": "Şer'i vekâlet", "desc": "Açık şer'i ifadelerle kesim vekâleti" }
+      { "title": "Dini Vekalet", "desc": "Kurban, İslam fıkhına uygun vakitte geçerli bir dini vekalet yoluyla gerçekleştirilir." },
+      { "title": "Gerçek Saha Belgesi", "desc": "Uygulamayı belgeleyen sahadan fotoğraf ve videolar, kurban tamamlanır tamamlanmaz size gönderilen onay mesajıyla birlikte." },
+      { "title": "Belgelenmiş Yıllar", "desc": "5 yılı aşkın süredir Gazze, Suriye, Çad, Sudan ve Mısır'da belgelenmiş saha deneyimi." }
     ]
   },
   "faq": {
-    "title": "Sıkça Sorulan Sorular",
+    "title": "Bağış öncesi engelleri kaldırmak",
     "items": [
-      { "q": "Kurban ne zaman kesilir?", "a": "Kesim günlerinde (Bayram günü ve teşrik günleri) kesilir, belgelendirme hemen ardından gönderilir." },
-      { "q": "Kurbanımın kesildiğinden nasıl emin olurum?", "a": "Sahadan fotoğraf ve video ile size özel kurban numarasını gönderiyoruz." },
-      { "q": "Vekâletin hükmü nedir?", "a": "Kurban kesiminde vekâlet, fakihlerin ittifakıyla caizdir." },
-      { "q": "Kurban etleri nereye gidiyor?", "a": "Kesim ülkesindeki yoksul ve yerinden edilmiş ailelere, Gazze öncelikli olarak dağıtılır." },
-      { "q": "Niyeti belirli bir kişiye adayabilir miyim?", "a": "Evet, niyet alanına ismi yazabilirsiniz; kesim sırasında zikredilir." },
-      { "q": "Üç yol arasındaki fark nedir?", "a": "1. yol: Afrika'da kesim ve Gazze'yi doyurma. 2. yol: kesim, konserve ve Gazze'ye sevkiyat. 3. yol: 7 ülkede canlı kurban." }
+      { "q": "Vekalet yoluyla kurban geçerli mi?", "a": "Evet, kurban vekaleti âlimlerin ittifakıyla caizdir ve ibadet doğru şer'î vakitte ifa edilir." },
+      { "q": "Kurbanım tam olarak nerede kesilir?", "a": "Yola göre değişir: 1. Yol Afrika'da, 2. Yol Sudan veya Hindistan'da sonra Gazze'ye gönderilir, 3. Yol ise listeden seçtiğiniz ülkede." },
+      { "q": "Kurbanın dağıtıldığını nasıl bileceğim?", "a": "Size sipariş numaralı bir onay mesajı gönderilir, bölgenin koşullarına bağlı olarak gerçekleştikten sonra saha fotoğraf ve videoları eklenebilir." },
+      { "q": "Başkası adına kurban kesebilir miyim?", "a": "Evet, formdaki \"Niyet / İsimler\" alanına kişinin adını veya niyetini yazın." },
+      { "q": "Son kayıt tarihi nedir?", "a": "Kalan süre, sayfanın üstündeki ve bağış formunun yanındaki geri sayım saatinde gösterilir. Kayıt, kurban günlerinden hemen önce kapanır." },
+      { "q": "Gerçekleştirilemezse ne olur?", "a": "Sizi derhal bilgilendiririz ve alternatif bir yol bulmaya çalışırız ya da bağışınızın tamamını iade ederiz — önce güven." }
     ]
   },
   "footer": {
-    "rights": "© {{year}} Kudüs Vakfı – Eğitim ve Yardım. Tüm hakları saklıdır.",
+    "rights": "© {{year}} Kudüs Eğitim ve Yardım Vakfı — Tüm hakları saklıdır",
     "follow": "Bizi takip edin",
-    "about": { "text": "Beş yılı aşkın süredir Gazze ve İslam dünyasının çevresinde yardım ve eğitim alanında faaliyet gösteren bir hayır vakfı." },
-    "links": { "title": "Hızlı bağlantılar" },
+    "about": { "text": "Kurbanın — İki Sevap: Sünnet yaşatılır, yardım ulaşır. Sizden vekalet, bizden teslimat." },
+    "links": { "title": "Hızlı Bağlantılar" },
     "links_list": [
-      { "label": "Yollar", "href": "#tracks" },
-      { "label": "Neden İki Sevap", "href": "#why" },
-      { "label": "Güven", "href": "#trust" },
+      { "label": "Neden İki Sevap?", "href": "#why" },
+      { "label": "Üç Yol", "href": "#tracks" },
+      { "label": "Belgeler", "href": "#trust" },
       { "label": "SSS", "href": "#faq" }
     ],
     "contact": {
