@@ -213,6 +213,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_any_role: {
+        Args: { _roles: Database["public"]["Enums"]["user_role"][] }
+        Returns: boolean
+      }
       has_role: {
         Args: { _role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
