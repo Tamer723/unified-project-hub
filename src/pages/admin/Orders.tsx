@@ -167,6 +167,13 @@ export default function Orders() {
             <div className="mt-6 space-y-3 text-sm">
               <Row k="ID" v={active.id} />
               <Row k="الحالة" v={active.status} />
+              <Row k="المسار" v={`${trackLabel(active)}${active.products?.code ? ` (${active.products.code})` : ""}`} />
+              {active.product_price_matrix && (
+                <>
+                  <Row k="الدولة" v={active.product_price_matrix.country_code} />
+                  <Row k="الحيوان" v={active.product_price_matrix.animal_code} />
+                </>
+              )}
               <Row k="المتبرع" v={active.donor_name} />
               <Row k="البريد" v={active.donor_email} />
               <Row k="الهاتف" v={active.donor_phone ?? "—"} />
