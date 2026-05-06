@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.notify_order_status_change() FROM anon, authenticated, public;
