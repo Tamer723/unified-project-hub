@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Copy, AlertTriangle, CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 
 type Provider = "mock" | "nestpay_3d" | "nestpay_hosting";
 
@@ -32,11 +33,26 @@ const PROVIDER_INFO: Record<Provider, { title: string; desc: string; needsSecret
   },
 };
 
+type SecretStatus = { nestpay_client_id: boolean; nestpay_store_key: boolean };
+
 export default function Payments() {
   const [provider, setProvider] = useState<Provider>("mock");
   const [testMode, setTestMode] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [secrets, setSecrets] = useState<SecretStatus | null>(null);
+  const [checkingSecrets, setCheckingSecrets] = useState(false);
+
+  const checkSecrets = useCallback(async () => {
+    setCheckingSecrets(true);
+    const { data, error } = await supabase.functions.invoke("payment-config-check");
+    setCheckingSecrets(false);
+    if (error) {
+      toast.error("تعذّر فحص الأسرار: " + error.message);
+      return;
+    }
+    setSecrets(data as SecretStatus);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -50,11 +66,26 @@ export default function Payments() {
         setProvider(data.active_provider as Provider);
         setTestMode(data.test_mode);
       }
+      await checkSecrets();
       setLoading(false);
     })();
-  }, []);
+  }, [checkSecrets]);
+
+  const missingList = secrets
+    ? [
+        !secrets.nestpay_client_id && "NESTPAY_CLIENT_ID",
+        !secrets.nestpay_store_key && "NESTPAY_STORE_KEY",
+      ].filter(Boolean) as string[]
+    : [];
+  const secretsOk = secrets ? missingList.length === 0 : false;
+  const needsSecrets = PROVIDER_INFO[provider].needsSecrets;
+  const blockedSave = needsSecrets && !secretsOk;
 
   const save = async () => {
+    if (blockedSave) {
+      toast.error("لا يمكن الحفظ: أسرار NestPay ناقصة");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("payment_settings")
@@ -86,11 +117,17 @@ export default function Payments() {
 
   return (
     <div className="space-y-6 p-4 md:p-6" dir="rtl">
-      <div>
-        <h1 className="text-2xl font-bold">إعدادات الدفع</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          تحكَّم في بوابة الدفع المستخدمة وبيئة التشغيل (تجريبية / إنتاج).
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">إعدادات الدفع</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            تحكَّم في بوابة الدفع المستخدمة وبيئة التشغيل (تجريبية / إنتاج).
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={checkSecrets} disabled={checkingSecrets}>
+          {checkingSecrets ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
+          إعادة فحص الأسرار
+        </Button>
       </div>
 
       <Card>
@@ -99,24 +136,40 @@ export default function Payments() {
         </CardHeader>
         <CardContent className="space-y-4">
           <RadioGroup value={provider} onValueChange={(v) => setProvider(v as Provider)} className="space-y-3">
-            {(Object.keys(PROVIDER_INFO) as Provider[]).map((key) => (
-              <label
-                key={key}
-                htmlFor={key}
-                className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors"
-              >
-                <RadioGroupItem value={key} id={key} className="mt-1" />
-                <div className="flex-1">
-                  <div className="font-bold">{PROVIDER_INFO[key].title}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{PROVIDER_INFO[key].desc}</div>
-                  {PROVIDER_INFO[key].needsSecrets && (
-                    <div className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" /> يتطلب أسرار: NESTPAY_CLIENT_ID, NESTPAY_STORE_KEY
+            {(Object.keys(PROVIDER_INFO) as Provider[]).map((key) => {
+              const pInfo = PROVIDER_INFO[key];
+              return (
+                <label
+                  key={key}
+                  htmlFor={key}
+                  className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors"
+                >
+                  <RadioGroupItem value={key} id={key} className="mt-1" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold">{pInfo.title}</span>
+                      {pInfo.needsSecrets && secrets && (
+                        secretsOk ? (
+                          <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">
+                            <CheckCircle2 className="h-3 w-3 me-1" /> الأسرار مهيّأة
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <XCircle className="h-3 w-3 me-1" /> أسرار ناقصة
+                          </Badge>
+                        )
+                      )}
                     </div>
-                  )}
-                </div>
-              </label>
-            ))}
+                    <div className="text-sm text-muted-foreground mt-1">{pInfo.desc}</div>
+                    {pInfo.needsSecrets && secrets && !secretsOk && (
+                      <div className="text-xs text-destructive mt-2 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> الناقص: {missingList.join("، ")}
+                      </div>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
           </RadioGroup>
         </CardContent>
       </Card>
@@ -127,6 +180,17 @@ export default function Payments() {
             <CardTitle>بيئة NestPay</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!secretsOk && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>لا يمكن تفعيل هذه البوابة</AlertTitle>
+                <AlertDescription className="mt-2 text-sm">
+                  الأسرار التالية مفقودة: <strong>{missingList.join("، ")}</strong>.
+                  أضِفها من إعدادات Lovable Cloud (Backend → Secrets) ثم اضغط "إعادة فحص الأسرار".
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
                 <Label className="text-base">وضع الاختبار (Test)</Label>
@@ -163,8 +227,11 @@ export default function Payments() {
         </Card>
       )}
 
-      <div className="flex justify-end gap-2 sticky bottom-0 bg-background/80 backdrop-blur py-3">
-        <Button onClick={save} disabled={saving}>
+      <div className="flex justify-end items-center gap-3 sticky bottom-0 bg-background/80 backdrop-blur py-3">
+        {blockedSave && (
+          <span className="text-xs text-destructive">الحفظ معطّل: أضِف الأسرار الناقصة أولاً</span>
+        )}
+        <Button onClick={save} disabled={saving || blockedSave}>
           {saving && <Loader2 className="h-4 w-4 animate-spin me-2" />}
           حفظ التغييرات
         </Button>
