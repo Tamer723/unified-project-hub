@@ -420,10 +420,16 @@ export function CheckoutSection({ selection }: Props) {
                         maxLength={7}
                         value={cardExpiry}
                         onChange={(e) => {
-                          let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                          if (v.length >= 3) v = `${v.slice(0, 2)} / ${v.slice(2)}`;
+                          const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          const v = raw.length >= 3 ? `${raw.slice(0, 2)} / ${raw.slice(2)}` : raw;
                           setCardExpiry(v);
-                          if (isValidExpiry(v)) clearError("cc_exp");
+                          if (isValidExpiry(v)) {
+                            clearError("cc_exp");
+                          } else if (raw.length >= 4 || (raw.length >= 2 && parseInt(raw.slice(0, 2), 10) > 12)) {
+                            setErrors((p) => ({ ...p, cc_exp: locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry" }));
+                          } else {
+                            clearError("cc_exp");
+                          }
                         }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
