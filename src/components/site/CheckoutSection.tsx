@@ -27,6 +27,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
+  const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -105,14 +106,16 @@ export function CheckoutSection({ selection }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="intent" className="text-brown-mid">
-                  {t("form.intention")}
+                <Label htmlFor="phone" className="text-brown-mid">
+                  {t("form.phone")}
                 </Label>
                 <Input
-                  id="intent"
-                  placeholder={locale === "ar" ? "اختياري" : "Optional"}
-                  value={intention}
-                  onChange={(e) => setIntention(e.target.value)}
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="+90 555 555 5555"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
               </div>
@@ -142,6 +145,18 @@ export function CheckoutSection({ selection }: Props) {
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="intent" className="text-brown-mid">
+                  {t("form.intention")}
+                </Label>
+                <Input
+                  id="intent"
+                  placeholder={locale === "ar" ? "اختياري — أسماء الموكَّل عنهم" : "Optional"}
+                  value={intention}
+                  onChange={(e) => setIntention(e.target.value)}
+                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                />
               </div>
             </div>
           )}
