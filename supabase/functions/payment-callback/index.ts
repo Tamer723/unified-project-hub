@@ -108,14 +108,23 @@ Deno.serve(async (req) => {
       }
       if (!iyzConvId) {
         console.error("iyzico callback: cannot resolve order", params);
-        return redirect(`${origin}/failed?reason=order_not_found`);
+        return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
       }
 
       const { data: ordRow } = await supabase.from("orders")
-        .select("id, status, provider").eq("id", iyzConvId).maybeSingle();
-      if (!ordRow) return redirect(`${origin}/failed?reason=order_not_found`);
+        .select("id, status, provider, metadata").eq("id", iyzConvId).maybeSingle();
+      if (!ordRow) return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
+
+      // Override origin/lang from order metadata if not provided in URL
+      const meta = (ordRow.metadata ?? {}) as { lang?: string; origin?: string };
+      if (!queryLang && (meta.lang === "ar" || meta.lang === "tr" || meta.lang === "en")) lang = meta.lang;
+      if (!queryOrigin && meta.origin) {
+        const safe = safeOriginFrom(meta.origin);
+        if (safe) origin = safe;
+      }
+
       if (ordRow.status === "paid" || ordRow.status === "failed") {
-        return redirect(`${origin}/${ordRow.status === "paid" ? "success" : "failed"}?order=${iyzConvId}`);
+        return redirect(appendLang(`${origin}/${ordRow.status === "paid" ? "success" : "failed"}?order=${iyzConvId}`));
       }
 
       if (!iyzApiKey || !iyzSecret) {
