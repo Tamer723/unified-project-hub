@@ -294,17 +294,23 @@ export function CheckoutSection({ selection }: Props) {
                     <Label htmlFor="cc-number" className="text-brown-mid">
                       {locale === "ar" ? "رقم البطاقة" : locale === "tr" ? "Kart Numarası" : "Card Number"}
                     </Label>
-                    <div className="relative mt-2">
+                    <div dir="ltr" className="relative mt-2">
                       <Input
                         id="cc-number"
                         inputMode="numeric"
+                        autoComplete="cc-number"
                         placeholder="1234 5678 9012 3456"
-                        maxLength={19}
-                        className="h-12 rounded-xl bg-cream-dark/60 pe-20 tracking-widest"
+                        maxLength={cardBrand === "amex" ? 17 : 19}
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          const brand = detectCardBrand(digits);
+                          setCardNumber(formatCardNumber(digits, brand));
+                        }}
+                        className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
-                      <div className="absolute inset-y-0 end-3 flex items-center gap-1">
-                        <span className="rounded bg-brown px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">VISA</span>
-                        <span className="rounded bg-sand px-1.5 py-0.5 text-[10px] font-bold text-brown">MC</span>
+                      <div className="absolute inset-y-0 end-3 flex items-center">
+                        <BrandLogo brand={cardBrand} />
                       </div>
                     </div>
                   </div>
