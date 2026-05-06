@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
 
       let path = "";
       if (activeProvider === "iyzico_checkout") {
-        path = "/payment/iyzipay/checkoutform/initialize/auth/ecom";
+        path = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
       } else {
         // 3DS — needs card
         path = "/payment/3dsecure/initialize";
