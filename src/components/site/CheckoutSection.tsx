@@ -109,17 +109,24 @@ export function CheckoutSection({ selection }: Props) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   type ProviderId = "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
-  const [activeProvider, setActiveProvider] = useState<ProviderId>("mock");
+  const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const [threeDSHtml, setThreeDSHtml] = useState<string | null>(null);
 
+  const fetchProvider = async (): Promise<ProviderId | null> => {
+    const { data } = await supabase.rpc("get_active_payment_provider");
+    const row = Array.isArray(data) ? data[0] : data;
+    const p = (row?.active_provider as ProviderId | undefined) ?? null;
+    if (p) setActiveProvider(p);
+    return p;
+  };
+
   useEffect(() => {
-    supabase.rpc("get_active_payment_provider").then(({ data }) => {
-      const row = Array.isArray(data) ? data[0] : data;
-      if (row?.active_provider) setActiveProvider(row.active_provider as ProviderId);
-    });
+    fetchProvider();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cardOnSite = activeProvider === "mock" || activeProvider === "nestpay_3d" || activeProvider === "iyzico_3ds";
+  const providerReady = activeProvider !== null;
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
