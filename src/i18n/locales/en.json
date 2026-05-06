@@ -1,62 +1,78 @@
 {
   "header": {
-    "name": "Quds Waqf for Education & Relief",
-    "cta": "Sponsor a Sacrifice",
-    "lang_bar": { "tag": "Udhiyah Season 1447H" },
-    "nav": { "tracks": "Tracks", "why": "Why Two Rewards", "trust": "Trust", "faq": "FAQ" },
+    "name": "Al-Quds Endowment for Education and Relief",
+    "brand_short": "Al-Quds Endowment",
+    "brand_sub": "Qurbani 2026",
+    "cta": "Donate Now",
+    "lang_bar": { "tag": "Al-Quds Endowment for Education and Relief" },
+    "nav": { "why": "Why Two Rewards?", "tracks": "Pathways", "trust": "Documentation", "faq": "FAQ" },
     "countdown": {
-      "prefix": "Time until Eid al-Adha",
-      "days": "days", "hours": "h", "minutes": "m", "seconds": "s"
+      "prefix": "⏳ Registration closes before Eid in",
+      "cta": "Register your Qurbani now",
+      "days": "d", "hours": "h", "minutes": "m", "seconds": "s"
     }
   },
   "hero": {
-    "badge": "Udhiyah Season 1447H",
-    "title": "Your Sacrifice, Two Rewards",
-    "subtitle": "The reward of reviving a Sunnah, and the reward of feeding the hungry. Trust us to perform your Udhiyah and deliver it to those in need in Gaza and across the Muslim world.",
-    "cta_primary": "Sponsor Now",
-    "cta_secondary": "How does it reach them?",
-    "stats": { "sacrifices": "Sacrifices delivered", "countries": "Countries", "years": "Years on the ground" },
-    "float_card": { "label": "Sheep from Sudan", "value": "$115" },
-    "float_badge": "Verified slaughter certificate"
+    "badge": "Together We Make an Impact",
+    "title": "Your Qurbani — Two Rewards",
+    "ayah": "\"So pray to your Lord and sacrifice.\" — Al-Kawthar: 2",
+    "subtitle": "Uphold the Sunnah and feed the needy in Gaza — one donation, two rewards. Choose your pathway, complete your mandate, and rest assured — your sacrifice reaches those who need it most.",
+    "cta_primary": "Choose Your Pathway",
+    "cta_secondary": "How It Works",
+    "stats": { "sacrifices": "sacrifices executed", "countries": "countries", "years": "years on the ground" },
+    "float_card": { "label": "+5000 sacrifices executed", "value": "Alhamdulillah" },
+    "float_badge": "Post-execution documentation"
   },
   "why": {
     "eyebrow": "Why Two Rewards?",
-    "title": "Two Rewards in One Act",
-    "subtitle": "An Udhiyah performed on your behalf, and meat that reaches those who have none.",
+    "title": "Because your sacrifice goes beyond the ritual",
+    "subtitle": "One donation that combines the reward of the Sunnah with the reward of feeding the needy",
     "cards": [
-      { "verse": "“So pray to your Lord and sacrifice.”", "title": "Reward of the Sunnah", "text": "Performing the rite of Udhiyah on time and in accordance with the Shariah." },
-      { "verse": "“They feed the needy, the orphan, and the captive…”", "title": "Reward of Feeding", "text": "Fresh meat reaches displaced and impoverished families in Gaza and beyond." },
-      { "verse": "“Cooperate in righteousness and piety.”", "title": "Reward of Aiding the Afflicted", "text": "A partnership in breaking the siege and bringing relief to those who need it most." }
+      { "verse": "\"So pray to your Lord and sacrifice.\"", "title": "Reward of Sunnah", "text": "Your sacrifice is performed through a clear religious mandate, slaughtered at the correct time per Islamic jurisprudence." },
+      { "verse": "\"They feed the needy out of love for Him.\"", "title": "Reward of Relief", "text": "Your sacrifice reaches besieged families in Gaza and elsewhere as meat and food on the day of Eid." },
+      { "verse": "From you the mandate, from us the delivery", "title": "One Donation, Two Rewards", "text": "One clear pathway combining worship and relief: understand, choose, complete your mandate, and rest assured." }
     ]
   },
   "tracks": {
-    "eyebrow": "Three verified tracks",
-    "title": "Choose Your Sacrifice Track",
-    "subtitle": "Each track reaches its recipients with full documentation",
-    "popular": "Most Chosen",
-    "choose": "Choose this Track",
+    "eyebrow": "Three Pathways",
+    "title": "Choose Your Pathway",
+    "subtitle": "Three clear pathways, each with a distinct purpose and promise",
+    "popular": "Most Popular",
+    "choose": "Select This Pathway",
     "from": "from",
     "unit": "per sacrifice"
   },
   "track1": {
-    "title": "Sunnah Sacrifice & Feed Gaza",
-    "tagline": "Sacrifice in Africa, food to Gaza",
-    "note": "Fixed price — performed with care",
-    "features": ["Cow share slaughtered in Africa", "Feeds a family in Gaza", "Photo documentation after execution"]
+    "title": "Pathway One",
+    "tagline": "Sacrifice in Africa, Feed Gaza",
+    "note": "One donation, two complete rewards",
+    "features": [
+      "Cow share sacrifice in Africa",
+      "Feed a family in Gaza (2 kg meat)",
+      "Post-execution documentation"
+    ]
   },
   "track2": {
-    "title": "Your Sacrifice Crosses the Siege",
-    "tagline": "Slaughter, can, and ship to Gaza",
-    "note": "12 cans of meat per sacrifice",
-    "features": ["Slaughter + canning + sterilization + shipping", "12 cans of meat reach Gaza", "From Sudan to our people in Gaza"]
+    "title": "Pathway Two — Canning",
+    "tagline": "Your sacrifice crosses the siege",
+    "note": "12 cans of meat reach Gaza",
+    "features": [
+      "Slaughter to highest halal standards",
+      "Canned and sterilized in certified factories",
+      "Canned & shipped directly to Gaza"
+    ]
   },
   "track3": {
-    "title": "Live Sacrifices",
-    "tagline": "Pick country and animal",
+    "title": "Pathway Three — Live Sacrifice",
+    "tagline": "Your trust at the heart of the field",
     "country_label": "Country",
     "animal_label": "Animal",
     "weight_note": "Price updates with selection",
-    "features": ["Sheep or 1/7 cow share option", "Performed in 7 countries", "Local distribution to the needy"],
+    "features": [
+      "Live slaughter and direct distribution",
+      "Visual and field documentation",
+      "Confirmation of delivery"
+    ],
     "countries": {
       "JM": "Jerusalem", "WB": "West Bank", "LB": "Lebanon",
       "SY": "Syria", "SD": "Sudan", "YE": "Yemen", "BD": "Bangladesh"
@@ -64,17 +80,17 @@
     "animals": { "sheep": "Sheep / Goat", "cow_share": "1/7 Cow Share" }
   },
   "form": {
-    "title": "Complete Your Sponsorship",
+    "title": "Complete Your Qurbani Mandate",
     "steps": { "info": "Your details", "pay": "Payment" },
-    "track": "Selected track",
+    "track": "Selected pathway",
     "quantity": "Number of sacrifices",
     "unit_price": "Unit price",
     "total": "Total",
     "name": "Full name",
     "email": "Email",
     "phone": "Phone (optional)",
-    "intention": "Intention / names (optional)",
-    "consent": "I authorize you to perform the sacrifice on my behalf according to the Shariah",
+    "intention": "Intent / names of those represented (optional)",
+    "consent": "I authorize you to perform the sacrifice on my behalf according to Shariah",
     "next": "Next", "back": "Back",
     "continue_pay": "Continue to payment",
     "summary": "Order summary", "secure": "Secure payment",
@@ -85,50 +101,51 @@
     }
   },
   "trust": {
-    "title": "Trust & Transparency",
-    "subtitle": "Accountable to Allah first, then to you",
+    "title": "Your trust reaches, then we reassure you",
+    "subtitle": "We build your trust through real documentation, not words",
+    "eyebrow": "Trust & Documentation",
     "badges": [
-      { "label": "Sacrifices delivered", "value": "5,000+" },
-      { "label": "Years of work", "value": "5+" },
+      { "label": "Sacrifices executed", "value": "+5000" },
+      { "label": "Years of work", "value": "+5" },
       { "label": "Countries", "value": "7" },
       { "label": "Field partners", "value": "12" }
     ],
     "items": [
-      { "title": "Real field documentation", "desc": "Photos and video from the ground for every sacrifice" },
-      { "title": "Years of proven work", "desc": "Over 5 years of sustained relief work" },
-      { "title": "Shariah authorization", "desc": "Clear shariah wording for the sacrifice mandate" }
+      { "title": "Religious Mandate", "desc": "The sacrifice is performed through a valid religious mandate, at the correct time per Islamic jurisprudence." },
+      { "title": "Real Field Documentation", "desc": "Photos and videos from the field documenting execution, plus a confirmation message sent to you upon completion." },
+      { "title": "Years of Documented Work", "desc": "Documented field experience in Gaza, Syria, Chad, Sudan, and Egypt over more than 5 years." }
     ]
   },
   "faq": {
-    "title": "Frequently Asked Questions",
+    "title": "Removing barriers before you donate",
     "items": [
-      { "q": "When is the sacrifice performed?", "a": "On the days of slaughter (Eid day and Tashreeq days), with documentation sent immediately after." },
-      { "q": "How can I confirm my sacrifice was performed?", "a": "We send photos and video from the field along with your unique sacrifice number." },
-      { "q": "What is the ruling on appointing a proxy?", "a": "Appointing a proxy for the sacrifice is permissible by the consensus of jurists." },
-      { "q": "Where does the meat go?", "a": "Distributed to poor and displaced families in the country of slaughter, with priority to Gaza." },
-      { "q": "Can I dedicate the intention to a specific person?", "a": "Yes, write the name in the intention field and it will be mentioned at slaughter." },
-      { "q": "What is the difference between the three tracks?", "a": "Track 1: slaughter in Africa and feed Gaza. Track 2: slaughter, canning and shipping to Gaza. Track 3: live sacrifices in 7 countries." }
+      { "q": "Is the sacrifice valid through proxy?", "a": "Yes, proxy in sacrifice is permissible by scholarly consensus, and the ritual is performed at the correct canonical time." },
+      { "q": "Where exactly is my sacrifice performed?", "a": "It varies by pathway: Pathway 1 in Africa, Pathway 2 in Sudan or India then shipped to Gaza, and Pathway 3 in the country you select from the list." },
+      { "q": "How do I know the sacrifice was distributed?", "a": "We send you a confirmation message with an order number, and field photos and videos can be attached post-execution depending on the region's circumstances." },
+      { "q": "Can I sacrifice on behalf of someone else?", "a": "Yes, write the person's name or intention in the \"Intent / Names\" field in the form." },
+      { "q": "What is the registration deadline?", "a": "The remaining time is shown in the countdown at the top of the page and near the donation form. Registration closes just before the days of sacrifice." },
+      { "q": "What if execution is not possible?", "a": "We notify you immediately and work to find an alternative pathway, or return your full donation — trust comes first." }
     ]
   },
   "footer": {
-    "rights": "© {{year}} Quds Waqf for Education & Relief — All rights reserved",
+    "rights": "© {{year}} Al-Quds Endowment for Education and Relief — All rights reserved",
     "follow": "Follow us",
-    "about": { "text": "A charitable endowment with over five years of work in relief and education in Gaza and across the Muslim world." },
-    "links": { "title": "Quick links" },
+    "about": { "text": "Your Qurbani — Two Rewards: Sunnah upheld, relief delivered. From you the mandate, from us the delivery." },
+    "links": { "title": "Quick Links" },
     "links_list": [
-      { "label": "Tracks", "href": "#tracks" },
-      { "label": "Why Two Rewards", "href": "#why" },
-      { "label": "Trust", "href": "#trust" },
+      { "label": "Why Two Rewards?", "href": "#why" },
+      { "label": "Three Pathways", "href": "#tracks" },
+      { "label": "Documentation", "href": "#trust" },
       { "label": "FAQ", "href": "#faq" }
     ],
     "contact": {
-      "title": "Contact us",
+      "title": "Contact Us",
       "address": "Istanbul, Türkiye",
       "email": "info@quds-waqf.org",
       "phone": "+90 555 555 5555"
     }
   },
-  "sticky_cta": { "label": "Sponsor a Sacrifice Now" },
+  "sticky_cta": { "label": "Register Your Qurbani Now" },
   "whatsapp": { "aria": "Contact us on WhatsApp" },
   "success": {
     "title": "Your sacrifice has been received, alhamdulillah",
