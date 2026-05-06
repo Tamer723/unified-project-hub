@@ -27,7 +27,7 @@ export default function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" side="right">
       <SidebarContent>
         <div className="px-3 py-4">
           <div className="flex items-center gap-2">
