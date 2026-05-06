@@ -144,7 +144,22 @@ Deno.serve(async (req) => {
       serverCurrency = m.currency;
       resolvedProduct = m.product_id;
     } else {
-      if (!resolvedProduct) {
+      // If track is matrix-priced and country/animal provided, find matrix row
+      if (resolvedProduct && track_country && track_animal) {
+        const { data: mrow } = await supabase
+          .from("product_price_matrix")
+          .select("id, price, currency, product_id")
+          .eq("product_id", resolvedProduct)
+          .eq("country_code", track_country)
+          .eq("animal_code", track_animal)
+          .eq("active", true)
+          .maybeSingle();
+        if (mrow) {
+          serverUnitPrice = mrow.price;
+          serverCurrency = mrow.currency;
+        }
+      }
+      if (serverUnitPrice == null) {
         const { data: p } = await supabase
           .from("products")
           .select("id")
