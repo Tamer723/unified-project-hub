@@ -416,6 +416,7 @@ export function CheckoutSection({ selection }: Props) {
                           let v = e.target.value.replace(/\D/g, "").slice(0, 4);
                           if (v.length >= 3) v = `${v.slice(0, 2)} / ${v.slice(2)}`;
                           setCardExpiry(v);
+                          if (isValidExpiry(v)) clearError("cc_exp");
                         }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
