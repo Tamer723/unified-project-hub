@@ -19,27 +19,30 @@ import { formatPrice, paymentCurrency } from "@/lib/pricing";
 import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Turnstile } from "./Turnstile";
+import { AsYouType, getCountries, getCountryCallingCode, isValidPhoneNumber, getExampleNumber } from "libphonenumber-js";
+import examples from "libphonenumber-js/examples.mobile.json";
+import type { CountryCode } from "libphonenumber-js";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
-const COUNTRIES = [
-  { code: "TR", flag: "🇹🇷", dial: "+90", min: 10, max: 10 },
-  { code: "SA", flag: "🇸🇦", dial: "+966", min: 9, max: 9 },
-  { code: "AE", flag: "🇦🇪", dial: "+971", min: 9, max: 9 },
-  { code: "EG", flag: "🇪🇬", dial: "+20", min: 10, max: 10 },
-  { code: "JO", flag: "🇯🇴", dial: "+962", min: 9, max: 9 },
-  { code: "KW", flag: "🇰🇼", dial: "+965", min: 8, max: 8 },
-  { code: "QA", flag: "🇶🇦", dial: "+974", min: 8, max: 8 },
-  { code: "BH", flag: "🇧🇭", dial: "+973", min: 8, max: 8 },
-  { code: "OM", flag: "🇴🇲", dial: "+968", min: 8, max: 8 },
-  { code: "PS", flag: "🇵🇸", dial: "+970", min: 9, max: 9 },
-  { code: "LB", flag: "🇱🇧", dial: "+961", min: 7, max: 8 },
-  { code: "SY", flag: "🇸🇾", dial: "+963", min: 9, max: 9 },
-  { code: "IQ", flag: "🇮🇶", dial: "+964", min: 10, max: 10 },
-  { code: "YE", flag: "🇾🇪", dial: "+967", min: 9, max: 9 },
-  { code: "GB", flag: "🇬🇧", dial: "+44", min: 10, max: 10 },
-  { code: "US", flag: "🇺🇸", dial: "+1", min: 10, max: 10 },
-];
+function flagEmoji(code: string): string {
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
+const PRIORITY_CODES: CountryCode[] = ["TR","SA","AE","EG","JO","KW","QA","BH","OM","PS","LB","SY","IQ","YE","GB","US"];
+
+const COUNTRIES = (() => {
+  const all = getCountries().map((code) => ({
+    code: code as CountryCode,
+    flag: flagEmoji(code),
+    dial: `+${getCountryCallingCode(code as CountryCode)}`,
+  }));
+  const priority = PRIORITY_CODES
+    .map((c) => all.find((x) => x.code === c))
+    .filter(Boolean) as typeof all;
+  const rest = all.filter((c) => !PRIORITY_CODES.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
+  return [...priority, ...rest];
+})();
 
 type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "troy" | "unknown";
 
