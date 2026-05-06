@@ -200,6 +200,7 @@ Deno.serve(async (req) => {
       provider: activeProvider, provider_txn_id: txnId,
       card_meta: card ? { last4, bin, brand, holder: card.holder } : null,
       expires_at,
+      metadata: { lang, origin: safeOrigin },
     }).select("id").single();
 
     if (insErr || !order) {
@@ -234,7 +235,9 @@ Deno.serve(async (req) => {
       }
 
       const iyzBase = testMode ? "https://sandbox-api.iyzipay.com" : "https://api.iyzipay.com";
-      const callbackBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-callback`;
+      const cbParams = new URLSearchParams({ lang });
+      if (safeOrigin) cbParams.set("o", safeOrigin);
+      const callbackBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-callback?${cbParams.toString()}`;
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "85.34.78.112";
       const priceStr = total.toFixed(2);
       const iyzCurrency = serverCurrency === "TRY" ? "TRY" : serverCurrency === "USD" ? "USD" : "TRY";
@@ -261,7 +264,7 @@ Deno.serve(async (req) => {
       }];
 
       const reqBody: Record<string, unknown> = {
-        locale: "tr",
+        locale: lang === "tr" ? "tr" : "en",
         conversationId: order.id,
         price: priceStr,
         paidPrice: priceStr,
