@@ -1,124 +1,124 @@
-# خطة بناء الصفحة الرئيسية — أضحيتك أجران (نسخة معدّلة)
 
-## 1. نظام التصميم (sweet-adjustments)
+# الخطة الكاملة — أضحيتك أجران (نسخة نهائية للمراجعة)
 
-تحديث `src/index.css` و`tailwind.config.ts` بألوان HSL:
+## 1) قاعدة البيانات (الجداول موجودة فعلاً)
 
-| التوكن | HSL | الأصل |
-|--------|-----|-------|
-| `--background` (cream) | `40 50% 93%` | #f5efe4 |
-| `--cream-dark` | `38 38% 88%` | #ede5d4 |
-| `--sand` | `36 47% 61%` | #c9a96e |
-| `--brown` (foreground) | `30 40% 21%` | #4a3520 |
-| `--brown-mid` | `30 43% 29%` | #6b4c2a |
-| `--primary` (green) | `150 38% 26%` | #2a5c45 |
-| `--green-mid` | `150 36% 33%` | #357558 |
-| `--green-pale` | `144 27% 93%` | #e8f2ec |
-| `--muted-foreground` | `33 25% 38%` | #7a6248 |
-| `--radius` | `1rem` | حواف ناعمة |
+الجداول `products` و`product_price_matrix` و`orders` جاهزة. سأقوم فقط بـ **تعبئة بيانات** (insert) — لا تغييرات schema.
 
-- خطوط: `Noto Naskh Arabic` + `Inter` من Google Fonts.
-- Tailwind: ألوان مخصّصة (`cream`, `sand`, `brown`, `green`, `green-pale`)، `boxShadow.soft / elevated`، `borderRadius.xl/2xl`.
-- إلغاء وضع dark (نبقي الفاتح فقط).
+**products** (3 صفوف):
+| code | base_price (USD cents) | pricing_type | display_order |
+|---|---|---|---|
+| track1 — انحر سنة وأطعم غزة | 10000 | fixed | 1 |
+| track2 — أضحيتك تعبر الحصار | 17500 | fixed | 2 |
+| track3 — الأضاحي الحية | 11500 | matrix | 3 |
 
-## 2. هيكل الملفات
+> ملاحظة: جدول `products` لا يحتوي عمود `code/title`. سأضيفهما عبر migration صغيرة (`code text unique`, `title_ar/en/tr text`) لربط منطقي مع الواجهة. (**هذا تغيير schema بسيط ومبرر**.)
+
+**product_price_matrix** (14 صف لـ track3): 7 دول × {sheep, cow_share}
+
+| country | sheep $ | cow_share $ |
+|---|---|---|
+| JM (القدس) | 285 | 285 |
+| WB (الضفة) | 250 | 250 |
+| LB (لبنان) | 230 | 200 |
+| SY (سوريا) | 165 | 145 |
+| SD (السودان) | 115 | 115 |
+| YE (اليمن) | 175 | 155 |
+| BD (بنغلاديش) | 195 | 175 |
+
+(الأسعار الدقيقة من الأصل؛ سأُجاوبها على القيم النهائية أثناء التنفيذ مع التزام بالمدى 115–850).
+
+## 2) جلب الأسعار في الواجهة
+
+- Hook `usePricing()` يستعلم `products` + `product_price_matrix` مرة عند تحميل الصفحة (React Query، staleTime 5 دقائق).
+- `lib/pricing.ts` يصبح **fallback ثابت** (نفس القيم) إن فشل الاستعلام.
+- `formatPrice(amountUsd, locale)` يبقى كما هو (USD للعربية/الإنجليزية، TRY للتركية بسعر صرف ثابت 45).
+
+## 3) تجانس بطاقات المسارات (الحل المعتمد)
+
+كل بطاقة = `grid grid-rows-[auto_auto_auto_1fr_auto] h-full`:
 
 ```text
-src/
-  i18n/
-    config.ts
-    locales/{ar,tr,en}.json
-  hooks/useDirection.ts          ← يضبط <html lang/dir>
-  lib/
-    constants.ts                 ← EID_DATE = 2026-05-27, USD_TO_TRY = 45
-    pricing.ts                   ← matrix الدول/الحيوانات + formatPrice
-  components/site/
-    Header.tsx
-    CountdownBar.tsx
-    LanguageSwitcher.tsx
-    Hero.tsx
-    Tracks.tsx
-    TrackCard.tsx
-    OrderForm.tsx                ← Dialog من 3 خطوات
-    PlaceholderImage.tsx         ← بديل صور Unsplash
-    TrustSection.tsx
-    Faq.tsx
-    Footer.tsx
-  pages/
-    Index.tsx
-    Success.tsx                  ← /success
-    Failed.tsx                   ← /failed
-main.tsx                          ← يستورد ./i18n/config
-App.tsx                           ← يضيف routes /success و /failed
+┌─────────────────────────┐
+│ Placeholder 16:9 (ثابت) │  row 1
+│ العنوان + شارة          │  row 2
+│ منطقة Selector h-[120px]│  row 3 ← فارغة في 1/2، فيها Country+Animal في 3
+│ المزايا (flex-1)        │  row 4 ← يمتد لملء الفراغ
+│ السعر + زر (sticky bot) │  row 5 ← border-t + bg-cream-dark/50
+└─────────────────────────┘
 ```
 
-## 3. العملة (مُحدّث)
+- **المسار 3**: داخل row 3 → `<Select>` للدولة (7 خيارات) + `<RadioGroup>` لـ {خروف/بقرة سبع}. السعر في row 5 يتحدث live.
+- **المسارَين 1 و2**: row 3 يحوي `<div class="h-[120px]" />` فارغ ليبقى الارتفاع متطابقاً.
+- شارة "الأكثر طلباً" تستخدم `position: absolute; top:-12px` فلا تؤثر.
 
-`lib/pricing.ts`:
-```text
-USD_TO_TRY = 45  (ثابت)
+عند الضغط "اختر هذا المسار":
+- 1 و2 → يفتح `OrderForm` بـ trackId والسعر الثابت.
+- 3 → يفتح `OrderForm` ويتخطى خطوة الاختيار (يمرّر country+animal+price المحدّدة).
 
-formatPrice(amountUsdCents, locale):
-  if locale === 'tr':  return `${(amountUsd * 45).toLocaleString('tr-TR')} ₺`
-  else:                return `$${amountUsd}`
-```
-- الأسعار في الكود تُخزَّن بالـ USD سنتات.
-- `ar` و `en` → عرض `$` فقط، بدون أي إشارة لليرة.
-- `tr` → عرض `₺` فقط، بدون أي إشارة للدولار.
-- عند إرسال الطلب لـ ZiraatPay لاحقاً: تُمرَّر `currency: "TRY"` للمستخدم التركي و`currency: "USD"` لغيره.
+## 4) إعادة بناء الواجهة لتطابق المرجع
 
-## 4. الصور — Placeholders (مُحدّث)
+### Header (3 طبقات)
+1. **LanguageBar** بنّي داكن: شعار + اسم + 3 pills للغة (يمين).
+2. **CountdownBar** أخضر: "متبقي على عيد الأضحى" + `DD:HH:MM:SS`.
+3. **Sticky Header** أبيض/blur: روابط (المسارات/لماذا/الثقة/الأسئلة) + زر CTA دائري أخضر.
 
-`PlaceholderImage.tsx`:
-- `<div>` بنسبة 4:3 أو 16:9، تدرّج `from-cream-dark to-green/15`، حدّ ذهبي خفيف، أيقونة مركزية من lucide (`Heart`, `Beef`, `Package` …) بلون green.
-- لا أي روابط Unsplash. يُستخدم في Hero + بطاقات Tracks + Trust.
+### Hero (شبكة عمودين md+)
+- **يسار**: شارة → عنوان ضخم 6xl → فقرة بإطار ذهبي logical → زرّان → شريط 3 إحصائيات.
+- **يمين**: visual stack — `PlaceholderImage 4:5` كبير + بطاقة عائمة "خروف من السودان $115" أسفل-يسار + بطاقة عائمة "✓ شهادة ذبح" أعلى-يمين.
 
-## 5. الصفحات
+### قسم جديد: Why Two Rewards (لماذا أجران)
+3 بطاقات بأيقونات + آية قرآنية لكل واحدة:
+- أجر الأضحية — `{فَصَلِّ لِرَبِّكَ وَانْحَرْ}`
+- أجر الإطعام — `{وَيُطْعِمُونَ الطَّعَامَ عَلَىٰ حُبِّهِ...}`
+- أجر إغاثة المنكوبين — `{وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ}`
 
-### `/` (Index)
-أقسام بالترتيب: Header → Hero → Tracks → OrderForm Dialog → Trust → FAQ → Footer.
+### Tracks (كما في القسم 3 أعلاه)
 
-**Header**: شريط بنّي علوي يحوي شعار "ق" دائري أخضر + اسم الوقف + `LanguageSwitcher` (3 pills). تحته `CountdownBar` بتدرّج أخضر يعرض `DD : HH : MM : SS` لـ EID_DATE = 2026-05-27، يحدّث كل ثانية. زر CTA يقفز لـ `#tracks`.
+### TrustSection
+شريط 4 شارات صغيرة + 3 بطاقات (Camera/ShieldCheck/FileCheck) كما في الأصل.
 
-**Hero**: خلفية cream مع دوائر radial-gradient، شارة "موسم الأضحية 1447هـ"، عنوان كبير "أضحيتك أجران"، فقرة في صندوق بحدّ ذهبي logical (`border-s-4 border-sand`)، زرّان (primary أخضر + outline)، 3 بطاقات إحصائيات (5000+ / 6 / 5+).
+### FAQ — توسيع لـ 6 أسئلة (من المرجع)
 
-**Tracks**: شبكة 3 أعمدة (1 على الموبايل):
-- المسار 1 — انحر سنّة وأطعم غزة، $100 ثابت، شارة "الأكثر طلباً ⭐".
-- المسار 2 — أضحيتك تعبر الحصار، $175 ثابت.
-- المسار 3 — الأضاحي الحيّة، يبدأ من $115. عند اختياره يفتح OrderForm مع قوائم منسدلة (دولة 6 خيارات + حيوان: خروف/ماعز $115 أو بقرة سبع $250) والسعر يُحدَّث live.
+### Footer 3 أعمدة (عن الوقف / روابط سريعة / تواصل) + شريط حقوق سفلي.
 
-**OrderForm** (Dialog، 3 خطوات بمؤشّر progress):
-1. **الاختيار**: اسم المسار، (للمسار 3) قائمتا الدولة والحيوان، عدد الأضاحي (≥1)، الإجمالي live بالعملة الحالية.
-2. **بياناتك**: الاسم* + البريد* + الهاتف + النية/الأسماء + checkbox توكيل شرعي* (zod + react-hook-form).
-3. **الدفع**: ملخص + زر "المتابعة للدفع" (mock → `toast` + `navigate("/success")` للتجربة)، شارات VISA/MC SVG inline + 🔒.
+### عناصر عائمة
+- `StickyCta.tsx`: شريط سفلي يظهر بعد scroll > 600px على الموبايل، يحوي "تبرّع الآن" → `#tracks`.
+- `WhatsAppFloat.tsx`: زر دائري ثابت bottom-end، رابط `https://wa.me/...` (رقم placeholder قابل للتعديل في `constants.ts`).
 
-**Trust**: 3 بطاقات (`Camera`, `ShieldCheck`, `FileCheck`).
-**FAQ**: Accordion من Radix بـ 5 أسئلة من i18n.
-**Footer**: شعار + روابط social (lucide) + سطر حقوق النشر بالسنة الجارية.
+## 5) الطباعة والألوان
 
-### `/success` (مُضاف)
-صفحة بسيطة بخلفية cream وبطاقة وسط الشاشة:
-- أيقونة `CheckCircle2` خضراء كبيرة.
-- عنوان "تمّ استلام أضحيتك بفضل الله" + نص توضيحي + أيقونة قلب.
-- زرّان: "العودة للرئيسية" → `/` و "وكّل أضحية أخرى" → `/#tracks`.
-- يحترم اللغة والاتجاه الحاليَّين عبر i18n.
+- خط عربي: **Tajawal** أوزان 400/700/900 (بدلاً من Noto Naskh) لمطابقة الطابع الهندسي.
+- إضافة في `tailwind.config.ts`:
+  - `borderRadius: { '3xl': '2rem', '4xl': '3rem' }`
+  - `boxShadow.float: '0 24px 80px hsl(30 40% 21% / 0.18)'`
+- في `index.css`: نمط SVG هندسي خفيف (نقاط/مثلثات `opacity-5`) كخلفية لـ Hero و Why.
 
-### `/failed` (مُضاف)
-نفس البنية بأيقونة `XCircle` بلون destructive مع نص "تعذّر إتمام الدفع" + سبب اختياري من query (`?reason=...`) + زر "إعادة المحاولة" يعود إلى `/#tracks`.
+## 6) i18n — مفاتيح جديدة
 
-## 6. i18n
+- `header.lang_bar.*`, `why.cards.[0..2].{verse,title,text}`, `trust.badges.*` (4 شارات), `faq.items.[0..5]`, `footer.{about,links,contact}.*`, `track3.countries.{JM,WB,LB,SY,SD,YE,BD}`, `track3.animals.{sheep,cow_share}`, `sticky_cta.label`, `whatsapp.aria`.
 
-- `react-i18next` + `i18next` + `i18next-browser-languagedetector`.
-- 3 ملفات JSON بنفس البنية. مفاتيح رئيسية: `header.*`, `hero.*`, `tracks.*`, `track1/2/3.*`, `form.*`, `trust.*`, `faq.*`, `footer.*`, `success.*`, `failed.*`, `price.format`.
-- `useDirection`: عند تغيير اللغة يُحدِّث `document.documentElement.lang/dir` (`ar`→rtl، باقيها ltr).
+## 7) Edge Function `create-payment` (موجود)
 
-## 7. الاستجابة و RTL
+سأضيف تحقّقاً server-side: عند `pricing_type='matrix'` يجلب السعر الفعلي من `product_price_matrix` بـ `(product_id, country_code, animal_code)` ولا يعتمد على ما يُرسله العميل. هذا يمنع التلاعب بالسعر.
 
-- استخدام classes منطقية (`ms-`, `me-`, `border-s`, `text-start`) لتجنّب التبديل اليدوي.
-- `md:` (768px) للتبديل من عمود إلى شبكة.
-- على الموبايل: زر CTA في الـ Header يُختصر لأيقونة.
+## 8) ما لن يتغيّر
 
-## 8. خارج النطاق الآن
+- ZiraatPay: لا اتصال فعلي الآن، الزر mock → `/success`.
+- ملفات Supabase التلقائية (`client.ts`, `types.ts`) لا تُعدَّل يدوياً.
 
-- لا اتصال بالـ Supabase ولا استدعاء `create-payment` (mock فقط ينقل لـ `/success`).
-- ZiraatPay نفسه: نُجهّز فقط مفتاح العملة (`TRY` للتركي، `USD` لغيره) ليُمرَّر لاحقاً دون تغيير الواجهة.
+---
+
+## الملفات المتأثرة (ملخص)
+
+**جديد**: `WhySection.tsx`, `LanguageBar.tsx`, `StickyCta.tsx`, `WhatsAppFloat.tsx`, `TrackCard.tsx`, `hooks/usePricing.ts`.
+
+**تعديل**: `Header.tsx` (3 طبقات), `Hero.tsx` (grid 2-col + visual stack), `Tracks.tsx` (يستخدم TrackCard + DB), `Faq.tsx` (6 أسئلة), `Footer.tsx` (3 أعمدة), `OrderForm.tsx` (يقبل preselection للمسار 3), `lib/pricing.ts` (fallback فقط), `index.css` + `tailwind.config.ts` (Tajawal + radii + shadows + pattern), ملفات `i18n/locales/*.json`.
+
+**Migration صغيرة**: إضافة `code/title_ar/title_en/title_tr` لجدول `products` + insert البيانات + insert مصفوفة الأسعار.
+
+**Edge Function**: تحديث `create-payment/index.ts` لاحتساب السعر من DB.
+
+---
+
+هل تعتمد كل ما سبق لأبدأ التنفيذ؟ أو هل تريد تعديل نقطة معيّنة (الدول/الأسعار/الخط/الأقسام)؟
