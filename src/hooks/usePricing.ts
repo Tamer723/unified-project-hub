@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FALLBACK_MATRIX,
+  FALLBACK_WEIGHTS,
   TRACK_PRICES,
   type AnimalCode,
   type CountryCode,
@@ -21,6 +22,7 @@ export type MatrixRow = {
   country_code: string;
   animal_code: string;
   price: number;
+  weight_kg: number | null;
 };
 
 export function usePricing() {
@@ -30,7 +32,7 @@ export function usePricing() {
     queryFn: async () => {
       const [products, matrix] = await Promise.all([
         supabase.from("products").select("id, code, base_price, pricing_type, active"),
-        supabase.from("product_price_matrix").select("id, product_id, country_code, animal_code, price").eq("active", true),
+        supabase.from("product_price_matrix").select("id, product_id, country_code, animal_code, price, weight_kg").eq("active", true),
       ]);
       return {
         products: (products.data ?? []) as ProductRow[],
@@ -71,6 +73,20 @@ export function resolveTrackPrice(
 
   if (product) return product.base_price;
   return trackCode === "track1" ? TRACK_PRICES.track1 : TRACK_PRICES.track2;
+}
+
+/** Resolve approximate weight (kg) for a track3 selection. */
+export function resolveTrackWeight(
+  data: { products: ProductRow[]; matrix: MatrixRow[] } | undefined,
+  country: CountryCode,
+  animal: AnimalCode,
+): number | null {
+  const product = data?.products.find((p) => p.code === "track3");
+  const row = data?.matrix.find(
+    (m) => m.product_id === product?.id && m.country_code === country && m.animal_code === animal,
+  );
+  if (row?.weight_kg != null) return Number(row.weight_kg);
+  return FALLBACK_WEIGHTS[country]?.[animal] ?? null;
 }
 
 export function getProductId(
