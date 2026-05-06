@@ -273,7 +273,7 @@ export function CheckoutSection({ selection }: Props) {
                   type="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) clearError("email"); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
