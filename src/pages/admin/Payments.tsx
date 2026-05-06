@@ -100,19 +100,14 @@ export default function Payments() {
     })();
   }, [checkSecrets]);
 
-  const missingList = secrets
-    ? [
-        !secrets.nestpay_client_id && "NESTPAY_CLIENT_ID",
-        !secrets.nestpay_store_key && "NESTPAY_STORE_KEY",
-      ].filter(Boolean) as string[]
-    : [];
-  const secretsOk = secrets ? missingList.length === 0 : false;
-  const needsSecrets = PROVIDER_INFO[provider].needsSecrets;
-  const blockedSave = needsSecrets && !secretsOk;
+  const currentGroup = PROVIDER_INFO[provider].secretsGroup;
+  const missingList = getMissing(currentGroup, secrets);
+  const secretsOk = currentGroup === "none" ? true : (secrets ? missingList.length === 0 : false);
+  const blockedSave = currentGroup !== "none" && !secretsOk;
 
   const save = async () => {
     if (blockedSave) {
-      toast.error("لا يمكن الحفظ: أسرار NestPay ناقصة");
+      toast.error("لا يمكن الحفظ: أسرار البوابة ناقصة");
       return;
     }
     setSaving(true);
