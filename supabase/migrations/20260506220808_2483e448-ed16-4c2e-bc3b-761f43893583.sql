@@ -1,0 +1,2 @@
+ALTER TABLE public.payment_settings DROP CONSTRAINT payment_settings_active_provider_check;
+ALTER TABLE public.payment_settings ADD CONSTRAINT payment_settings_active_provider_check CHECK (active_provider = ANY (ARRAY['mock','nestpay_3d','nestpay_hosting','iyzico_checkout','iyzico_3ds']));
