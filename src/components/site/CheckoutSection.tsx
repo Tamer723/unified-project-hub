@@ -195,7 +195,7 @@ export function CheckoutSection({ selection }: Props) {
 
       const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
         body: {
-          donor: { name, email, phone: phone ? `${dialCode}${phone.replace(/\s/g, "")}` : null },
+          donor: { name, email, phone: phone ? `+${getCountryCallingCode(countryCode)}${phone.replace(/\D/g, "")}` : null },
           intention: intention || null,
           quantity,
           unit_price: selection.unitPrice,
