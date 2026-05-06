@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { formatPrice, paymentCurrency } from "@/lib/pricing";
 import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Turnstile } from "./Turnstile";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
@@ -102,6 +103,7 @@ export function CheckoutSection({ selection }: Props) {
   const [cardCvc, setCardCvc] = useState("");
   const [paying, setPaying] = useState(false);
   const [agree, setAgree] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const unitPrice = selection?.unitPrice ?? 0;
@@ -168,6 +170,10 @@ export function CheckoutSection({ selection }: Props) {
       return;
     }
     if (!validateCard()) return;
+    if (!captchaToken) {
+      toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
+      return;
+    }
 
     setPaying(true);
     try {
@@ -181,6 +187,7 @@ export function CheckoutSection({ selection }: Props) {
           quantity,
           unit_price: selection.unitPrice,
           currency: paymentCurrency(locale),
+          captchaToken,
           card: {
             number: digits,
             holder: cardHolder.trim(),
@@ -449,11 +456,20 @@ export function CheckoutSection({ selection }: Props) {
             <span>{t("checkout.agree")}</span>
           </label>
 
+          {step === 2 && (
+            <div className="mt-4 flex justify-center">
+              <Turnstile
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+          )}
+
           <div className="mt-6 flex items-center justify-between gap-3">
             {step === 2 ? (
               <Button
                 onClick={handlePay}
-                disabled={paying}
+                disabled={paying || !captchaToken}
                 size="lg"
                 className="rounded-full bg-green hover:bg-green-mid text-primary-foreground"
               >
