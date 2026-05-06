@@ -177,6 +177,7 @@ export default function Orders() {
                 <tr className="text-xs text-muted-foreground border-b">
                   <th className="text-start py-2 font-medium">التاريخ</th>
                   <th className="text-start py-2 font-medium">المتبرع</th>
+                  <th className="text-start py-2 font-medium">المصدر</th>
                   <th className="text-start py-2 font-medium">المسار</th>
                   <th className="text-start py-2 font-medium">الكمية</th>
                   <th className="text-start py-2 font-medium">المبلغ</th>
