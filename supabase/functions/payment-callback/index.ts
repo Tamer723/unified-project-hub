@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
       }
 
       if (!iyzApiKey || !iyzSecret) {
-        return redirect(`${origin}/failed?reason=iyzico_not_configured`);
+        return redirect(appendLang(`${origin}/failed?reason=iyzico_not_configured`));
       }
 
       // Determine env from settings
