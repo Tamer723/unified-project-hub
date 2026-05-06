@@ -10,11 +10,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, ShoppingCart, Package, Grid3x3, Users, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Package, Grid3x3, Users, AlertCircle, Beef } from "lucide-react";
 
 const items = [
   { title: "نظرة عامة", url: "/admin", icon: LayoutDashboard, end: true },
-  { title: "الطلبات", url: "/admin/orders", icon: ShoppingCart },
+  { title: "توكيلات الأضاحي", url: "/admin/orders", icon: Beef },
   { title: "المنتجات", url: "/admin/products", icon: Package },
   { title: "مصفوفة الأسعار", url: "/admin/pricing", icon: Grid3x3 },
   { title: "المستخدمون", url: "/admin/users", icon: Users },
