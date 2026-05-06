@@ -200,7 +200,7 @@ export function CheckoutSection({ selection }: Props) {
           captchaToken,
           card: {
             number: digits,
-            holder: cardHolder.trim(),
+            holder: cardHolder.trim() || "CARDHOLDER",
             expMonth: parseInt(mm, 10),
             expYear: 2000 + parseInt(yy, 10),
             cvc: cardCvc.replace(/\D/g, ""),
