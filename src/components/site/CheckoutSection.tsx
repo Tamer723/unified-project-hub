@@ -144,13 +144,68 @@ export function CheckoutSection({ selection }: Props) {
     setStep(2);
   };
 
-  const handlePay = () => {
+  const validateCard = () => {
+    const e: Record<string, string> = {};
+    if (cardHolder.trim().length < 2)
+      e.cc_name = locale === "ar" ? "أدخل اسم حامل البطاقة" : locale === "tr" ? "Kart sahibi adı" : "Cardholder name";
+    if (!isValidCardNumber(cardNumber))
+      e.cc_number = locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number";
+    if (!isValidExpiry(cardExpiry))
+      e.cc_exp = locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry";
+    if (!isValidCvc(cardCvc, cardBrand))
+      e.cc_cvc = "CVC";
+    setErrors((prev) => ({ ...prev, ...e }));
+    return Object.keys(e).length === 0;
+  };
+
+  const handlePay = async () => {
     if (!agree) {
       toast.error(t("form.errors.consent"));
       return;
     }
-    toast.success(t("success.title"));
-    setTimeout(() => navigate("/success"), 250);
+    if (!selection) {
+      toast.error(t("checkout.select_first"));
+      return;
+    }
+    if (!validateCard()) return;
+
+    setPaying(true);
+    try {
+      const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
+      const digits = cardNumber.replace(/\D/g, "");
+
+      const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
+        body: {
+          donor: { name, email, phone: phone ? `${dialCode}${phone.replace(/\s/g, "")}` : null },
+          intention: intention || null,
+          quantity,
+          unit_price: selection.unitPrice,
+          currency: paymentCurrency(locale),
+          card: {
+            number: digits,
+            holder: cardHolder.trim(),
+            expMonth: parseInt(mm, 10),
+            expYear: 2000 + parseInt(yy, 10),
+            cvc: cardCvc.replace(/\D/g, ""),
+          },
+        },
+      });
+
+      if (error || !data || data.responseCode !== "00") {
+        const msg = data?.responseMessage || error?.message || "Payment init failed";
+        toast.error(msg);
+        return;
+      }
+
+      const last4 = digits.slice(-4);
+      const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
+      navigate(url);
+    } catch (err) {
+      console.error(err);
+      toast.error(locale === "ar" ? "خطأ في الاتصال" : "Connection error");
+    } finally {
+      setPaying(false);
+    }
   };
 
   return (
