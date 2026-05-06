@@ -93,7 +93,7 @@ export default function Payment3DSMock() {
     }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ziraat-payment-verify", {
+      const { data, error } = await supabase.functions.invoke("payment-mock-verify", {
         body: { order_id: orderId, otp },
       });
       if (error) throw error;

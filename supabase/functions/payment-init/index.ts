@@ -28,6 +28,8 @@ const Body = z.object({
   track_country: z.string().max(8).optional().nullable(),
   track_animal: z.string().max(40).optional().nullable(),
   captchaToken: z.string().min(1).max(2048),
+  lang: z.enum(["ar", "tr", "en"]).optional().default("ar"),
+  origin: z.string().url().max(200).optional().nullable(),
   card: z.object({
     number: z.string().min(13).max(25),
     holder: z.string().max(80).optional().default(""),
@@ -96,7 +98,13 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken } = parsed.data;
+    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken, lang, origin: clientOrigin } = parsed.data;
+    const ALLOWED_ORIGINS = [
+      "https://campaign.4c.studio",
+      "https://the-app-orchestrator.lovable.app",
+      "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
+    ];
+    const safeOrigin = clientOrigin && (ALLOWED_ORIGINS.includes(clientOrigin) || /\.lovable\.(app|dev)$/.test(new URL(clientOrigin).host)) ? clientOrigin : null;
 
     // CAPTCHA
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -192,6 +200,7 @@ Deno.serve(async (req) => {
       provider: activeProvider, provider_txn_id: txnId,
       card_meta: card ? { last4, bin, brand, holder: card.holder } : null,
       expires_at,
+      metadata: { lang, origin: safeOrigin },
     }).select("id").single();
 
     if (insErr || !order) {
@@ -226,7 +235,9 @@ Deno.serve(async (req) => {
       }
 
       const iyzBase = testMode ? "https://sandbox-api.iyzipay.com" : "https://api.iyzipay.com";
-      const callbackBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-callback`;
+      const cbParams = new URLSearchParams({ lang });
+      if (safeOrigin) cbParams.set("o", safeOrigin);
+      const callbackBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-callback?${cbParams.toString()}`;
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "85.34.78.112";
       const priceStr = total.toFixed(2);
       const iyzCurrency = serverCurrency === "TRY" ? "TRY" : serverCurrency === "USD" ? "USD" : "TRY";
@@ -253,7 +264,7 @@ Deno.serve(async (req) => {
       }];
 
       const reqBody: Record<string, unknown> = {
-        locale: "tr",
+        locale: lang === "tr" ? "tr" : "en",
         conversationId: order.id,
         price: priceStr,
         paidPrice: priceStr,

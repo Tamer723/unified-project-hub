@@ -22,18 +22,28 @@ async function hashV3(params: Record<string, string>, storeKey: string): Promise
   return encodeBase64(new Uint8Array(digest));
 }
 
-function siteOrigin(req: Request): string {
-  // Prefer Origin/Referer if present, else fall back to a configured site URL or hardcoded.
-  const ref = req.headers.get("referer");
-  if (ref) {
-    try {
-      const u = new URL(ref);
-      // Ignore referers from payment providers (iyzico, nestpay, etc.) — use site URL instead
-      const isProvider = /iyzipay|iyzico|asseco|ziraat|nestpay/i.test(u.host);
-      if (!isProvider) return `${u.protocol}//${u.host}`;
-    } catch { /* ignore */ }
-  }
-  return Deno.env.get("PUBLIC_SITE_URL") || "https://campaign.4c.studio";
+const ALLOWED_ORIGINS = [
+  "https://campaign.4c.studio",
+  "https://the-app-orchestrator.lovable.app",
+  "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
+];
+
+function safeOriginFrom(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const u = new URL(value);
+    const host = u.host;
+    if (ALLOWED_ORIGINS.includes(`${u.protocol}//${host}`)) return `${u.protocol}//${host}`;
+    if (/\.lovable\.(app|dev)$/.test(host)) return `${u.protocol}//${host}`;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function siteOrigin(req: Request, queryOrigin: string | null, metaOrigin: string | null): string {
+  return safeOriginFrom(queryOrigin)
+    || safeOriginFrom(metaOrigin)
+    || Deno.env.get("PUBLIC_SITE_URL")
+    || "https://campaign.4c.studio";
 }
 
 function redirect(url: string): Response {
@@ -43,7 +53,17 @@ function redirect(url: string): Response {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const origin = siteOrigin(req);
+  // Read lang/origin from URL query (set when we built the callbackUrl)
+  const reqUrl = new URL(req.url);
+  const queryLang = reqUrl.searchParams.get("lang");
+  const queryOrigin = reqUrl.searchParams.get("o");
+  let lang = (queryLang === "ar" || queryLang === "tr" || queryLang === "en") ? queryLang : "ar";
+  let origin = siteOrigin(req, queryOrigin, null);
+
+  function appendLang(url: string): string {
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}lang=${lang}`;
+  }
 
   try {
     // Parse body: NestPay sends application/x-www-form-urlencoded
@@ -88,18 +108,27 @@ Deno.serve(async (req) => {
       }
       if (!iyzConvId) {
         console.error("iyzico callback: cannot resolve order", params);
-        return redirect(`${origin}/failed?reason=order_not_found`);
+        return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
       }
 
       const { data: ordRow } = await supabase.from("orders")
-        .select("id, status, provider").eq("id", iyzConvId).maybeSingle();
-      if (!ordRow) return redirect(`${origin}/failed?reason=order_not_found`);
+        .select("id, status, provider, metadata").eq("id", iyzConvId).maybeSingle();
+      if (!ordRow) return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
+
+      // Override origin/lang from order metadata if not provided in URL
+      const meta = (ordRow.metadata ?? {}) as { lang?: string; origin?: string };
+      if (!queryLang && (meta.lang === "ar" || meta.lang === "tr" || meta.lang === "en")) lang = meta.lang;
+      if (!queryOrigin && meta.origin) {
+        const safe = safeOriginFrom(meta.origin);
+        if (safe) origin = safe;
+      }
+
       if (ordRow.status === "paid" || ordRow.status === "failed") {
-        return redirect(`${origin}/${ordRow.status === "paid" ? "success" : "failed"}?order=${iyzConvId}`);
+        return redirect(appendLang(`${origin}/${ordRow.status === "paid" ? "success" : "failed"}?order=${iyzConvId}`));
       }
 
       if (!iyzApiKey || !iyzSecret) {
-        return redirect(`${origin}/failed?reason=iyzico_not_configured`);
+        return redirect(appendLang(`${origin}/failed?reason=iyzico_not_configured`));
       }
 
       // Determine env from settings
@@ -108,12 +137,13 @@ Deno.serve(async (req) => {
 
       let path = "";
       let body: Record<string, unknown> = {};
+      const iyzLocale = lang === "tr" ? "tr" : "en";
       if (iyzToken) {
         path = "/payment/iyzipos/checkoutform/auth/ecom/detail/";
-        body = { locale: "tr", conversationId: iyzConvId, token: iyzToken };
+        body = { locale: iyzLocale, conversationId: iyzConvId, token: iyzToken };
       } else {
         path = "/payment/3dsecure/auth";
-        body = { locale: "tr", conversationId: iyzConvId, paymentId: iyzPaymentId, conversationData: params.conversationData || "" };
+        body = { locale: iyzLocale, conversationId: iyzConvId, paymentId: iyzPaymentId, conversationData: params.conversationData || "" };
       }
       const bodyStr = JSON.stringify(body);
       const randomKey = `${Date.now()}${Math.floor(Math.random() * 1e9)}`;
@@ -137,21 +167,22 @@ Deno.serve(async (req) => {
       const finalStatus = ok ? "paid" : "failed";
       const reason = ok ? null : (j.errorMessage || `iyzico verify failed (${j.status})`);
 
+      const prevMeta = (ordRow.metadata ?? {}) as Record<string, unknown>;
       await supabase.from("orders").update({
         status: finalStatus,
         failure_reason: reason,
         provider_txn_id: j.paymentId || iyzPaymentId || null,
-        metadata: { iyzico_verify: j, processed_at: new Date().toISOString() },
+        metadata: { ...prevMeta, iyzico_verify: j, processed_at: new Date().toISOString() },
       }).eq("id", iyzConvId).in("status", ["pending", "awaiting_3ds"]);
 
-      return redirect(`${origin}/${ok ? "success" : "failed"}?order=${iyzConvId}${ok ? "" : `&reason=${encodeURIComponent(reason || "failed")}`}`);
+      return redirect(appendLang(`${origin}/${ok ? "success" : "failed"}?order=${iyzConvId}${ok ? "" : `&reason=${encodeURIComponent(reason || "failed")}`}`));
     }
 
     // ===== NestPay callback (existing logic) =====
     const oid = params.oid || params.OrderId || params.orderid || "";
     if (!oid) {
       console.error("callback: missing oid", params);
-      return redirect(`${origin}/failed?reason=missing_oid`);
+      return redirect(appendLang(`${origin}/failed?reason=missing_oid`));
     }
 
     // Hash verification (only if storeKey configured AND HASH present)
@@ -193,10 +224,10 @@ Deno.serve(async (req) => {
       .select("id, status").eq("id", oid).maybeSingle();
     if (!order) {
       console.error("callback: order not found", oid);
-      return redirect(`${origin}/failed?reason=order_not_found`);
+      return redirect(appendLang(`${origin}/failed?reason=order_not_found`));
     }
     if (order.status === "paid" || order.status === "failed") {
-      return redirect(`${origin}/${order.status === "paid" ? "success" : "failed"}`);
+      return redirect(appendLang(`${origin}/${order.status === "paid" ? "success" : "failed"}`));
     }
 
     await supabase.from("orders").update({
@@ -207,12 +238,12 @@ Deno.serve(async (req) => {
     }).eq("id", oid).in("status", ["pending", "awaiting_3ds"]);
 
     if (finalStatus === "paid") {
-      return redirect(`${origin}/success?order=${oid}`);
+      return redirect(appendLang(`${origin}/success?order=${oid}`));
     }
-    return redirect(`${origin}/failed?reason=${encodeURIComponent(failureReason || "failed")}`);
+    return redirect(appendLang(`${origin}/failed?reason=${encodeURIComponent(failureReason || "failed")}`));
 
   } catch (err) {
     console.error("callback error:", (err as Error).message);
-    return redirect(`${origin}/failed?reason=internal_error`);
+    return redirect(appendLang(`${origin}/failed?reason=internal_error`));
   }
 });
