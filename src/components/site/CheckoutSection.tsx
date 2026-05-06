@@ -95,6 +95,10 @@ export function CheckoutSection({ selection }: Props) {
   const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const cardBrand = detectCardBrand(cardNumber.replace(/\D/g, ""));
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
+  const [paying, setPaying] = useState(false);
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
