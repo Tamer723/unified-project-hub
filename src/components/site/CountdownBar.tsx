@@ -13,8 +13,8 @@ export function CountdownBar() {
   ];
   return (
     <div className="bg-gradient-to-r from-green to-green-mid text-primary-foreground">
-      <div className="container flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-2 text-sm">
-        <span className="font-medium opacity-90">{t("header.countdown.prefix")}</span>
+      <div className="container flex flex-wrap items-center justify-center gap-x-4 gap-y-2 py-2 text-sm">
+        <span className="font-medium opacity-95">{t("header.countdown.prefix")}</span>
         <div className="flex items-center gap-3">
           {cells.map((c, i) => (
             <div key={i} className="flex items-baseline gap-1">
@@ -25,6 +25,10 @@ export function CountdownBar() {
             </div>
           ))}
         </div>
+        <span className="opacity-60">•</span>
+        <a href="#tracks" className="font-bold underline-offset-2 hover:underline">
+          {t("header.countdown.cta")}
+        </a>
       </div>
     </div>
   );
