@@ -53,13 +53,13 @@ export function resolveTrackPrice(
       const row = data?.matrix.find(
         (m) => m.product_id === product?.id && m.country_code === country && m.animal_code === animal,
       );
-      if (row) return Math.round(row.price / 100);
+      if (row) return row.price;
       return FALLBACK_MATRIX[country][animal];
     }
     return TRACK_PRICES.track3From;
   }
 
-  if (product) return Math.round(product.base_price / 100);
+  if (product) return product.base_price;
   return trackCode === "track1" ? TRACK_PRICES.track1 : TRACK_PRICES.track2;
 }
 
