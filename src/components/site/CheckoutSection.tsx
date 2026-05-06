@@ -685,7 +685,7 @@ export function CheckoutSection({ selection }: Props) {
               title="3DS Challenge"
               srcDoc={threeDSHtml}
               className="w-full h-full border-0"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation allow-top-navigation-by-user-activation"
             />
           </div>
         </div>
