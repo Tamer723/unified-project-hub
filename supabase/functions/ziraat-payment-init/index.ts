@@ -160,35 +160,37 @@ Deno.serve(async (req) => {
         }
       }
       if (serverUnitPrice == null) {
-        const { data: p } = await supabase
+        if (!resolvedProduct) {
+          const { data: p } = await supabase
+            .from("products")
+            .select("id")
+            .eq("active", true)
+            .order("display_order", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          resolvedProduct = p?.id ?? null;
+        }
+        if (!resolvedProduct) {
+          return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: prod } = await supabase
           .from("products")
-          .select("id")
+          .select("base_price, currency, active")
+          .eq("id", resolvedProduct)
           .eq("active", true)
-          .order("display_order", { ascending: true })
-          .limit(1)
           .maybeSingle();
-        resolvedProduct = p?.id ?? null;
+        if (!prod) {
+          return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        serverUnitPrice = prod.base_price;
+        serverCurrency = prod.currency;
       }
-      if (!resolvedProduct) {
-        return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const { data: prod } = await supabase
-        .from("products")
-        .select("base_price, currency, active")
-        .eq("id", resolvedProduct)
-        .eq("active", true)
-        .maybeSingle();
-      if (!prod) {
-        return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      serverUnitPrice = prod.base_price;
-      serverCurrency = prod.currency;
     }
 
     const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
