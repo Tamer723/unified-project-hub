@@ -93,6 +93,8 @@ export function CheckoutSection({ selection }: Props) {
   const [intention, setIntention] = useState("");
   const [dialCode, setDialCode] = useState("+90");
   const [phone, setPhone] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const cardBrand = detectCardBrand(cardNumber.replace(/\D/g, ""));
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
