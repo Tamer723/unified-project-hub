@@ -28,6 +28,8 @@ const Body = z.object({
   track_country: z.string().max(8).optional().nullable(),
   track_animal: z.string().max(40).optional().nullable(),
   captchaToken: z.string().min(1).max(2048),
+  lang: z.enum(["ar", "tr", "en"]).optional().default("ar"),
+  origin: z.string().url().max(200).optional().nullable(),
   card: z.object({
     number: z.string().min(13).max(25),
     holder: z.string().max(80).optional().default(""),
