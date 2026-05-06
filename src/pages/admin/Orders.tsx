@@ -117,7 +117,7 @@ export default function Orders() {
                 <tr className="text-xs text-muted-foreground border-b">
                   <th className="text-start py-2 font-medium">التاريخ</th>
                   <th className="text-start py-2 font-medium">المتبرع</th>
-                  <th className="text-start py-2 font-medium">البريد</th>
+                  <th className="text-start py-2 font-medium">المسار</th>
                   <th className="text-start py-2 font-medium">الكمية</th>
                   <th className="text-start py-2 font-medium">المبلغ</th>
                   <th className="text-start py-2 font-medium">الحالة</th>
@@ -135,8 +135,16 @@ export default function Orders() {
                     <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(o.created_at).toLocaleString("ar")}
                     </td>
-                    <td className="py-2">{o.donor_name}</td>
-                    <td className="py-2 text-xs">{o.donor_email}</td>
+                    <td className="py-2">
+                      <div>{o.donor_name}</div>
+                      <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium">{trackLabel(o)}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        {o.products?.code ?? "—"}{trackVariant(o) ? ` · ${trackVariant(o)}` : ""}
+                      </div>
+                    </td>
                     <td className="py-2">{o.quantity}</td>
                     <td className="py-2 font-mono">{fmt(o.total_amount, o.currency)}</td>
                     <td className="py-2"><span className={statusBadge(o.status)}>{o.status}</span></td>
