@@ -190,6 +190,22 @@ export function CheckoutSection({ selection }: Props) {
     return Object.keys(e).length === 0;
   };
 
+  const submitRedirectPost = (action: string, fields: Record<string, string>) => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    form.style.display = "none";
+    Object.entries(fields).forEach(([k, v]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = k;
+      input.value = v ?? "";
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  };
+
   const handlePay = async () => {
     if (!agree) {
       toast.error(t("form.errors.consent"));
@@ -199,7 +215,7 @@ export function CheckoutSection({ selection }: Props) {
       toast.error(t("checkout.select_first"));
       return;
     }
-    if (!validateCard()) return;
+    if (cardOnSite && !validateCard()) return;
     if (!captchaToken) {
       toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
       return;
@@ -207,10 +223,21 @@ export function CheckoutSection({ selection }: Props) {
 
     setPaying(true);
     try {
-      const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
-      const digits = cardNumber.replace(/\D/g, "");
+      const cardPayload = cardOnSite
+        ? (() => {
+            const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
+            const digits = cardNumber.replace(/\D/g, "");
+            return {
+              number: digits,
+              holder: cardHolder.trim() || undefined,
+              expMonth: parseInt(mm, 10),
+              expYear: 2000 + parseInt(yy, 10),
+              cvc: cardCvc.replace(/\D/g, ""),
+            };
+          })()
+        : undefined;
 
-      const { data, error } = await supabase.functions.invoke("ziraat-payment-init", {
+      const { data, error } = await supabase.functions.invoke("payment-init", {
         body: {
           donor: { name, email, phone: phone ? `+${getCountryCallingCode(countryCode)}${phone.replace(/\D/g, "")}` : null },
           intention: intention || null,
@@ -221,13 +248,7 @@ export function CheckoutSection({ selection }: Props) {
           track_country: selection.country ?? null,
           track_animal: selection.animal ?? null,
           captchaToken,
-          card: {
-            number: digits,
-            holder: cardHolder.trim() || undefined,
-            expMonth: parseInt(mm, 10),
-            expYear: 2000 + parseInt(yy, 10),
-            cvc: cardCvc.replace(/\D/g, ""),
-          },
+          card: cardPayload,
         },
       });
 
@@ -237,9 +258,15 @@ export function CheckoutSection({ selection }: Props) {
         return;
       }
 
-      const last4 = digits.slice(-4);
-      const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
-      navigate(url);
+      if (data.mode === "internal_3ds" && data.threeDSUrl) {
+        const last4 = cardPayload ? cardPayload.number.slice(-4) : (data.last4 ?? "0000");
+        const url = `${data.threeDSUrl}&last4=${last4}&amount=${data.amount}&currency=${data.currency}`;
+        navigate(url);
+      } else if (data.mode === "redirect_post" && data.action && data.fields) {
+        submitRedirectPost(data.action, data.fields);
+      } else {
+        toast.error("Unexpected payment response");
+      }
     } catch (err) {
       console.error(err);
       toast.error(locale === "ar" ? "خطأ في الاتصال" : "Connection error");
