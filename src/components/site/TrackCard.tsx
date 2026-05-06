@@ -28,6 +28,7 @@ type Props = {
   pricingData: Parameters<typeof resolveTrackPrice>[1];
   locale: Locale;
   popular?: boolean;
+  disabled?: boolean;
   country?: CountryCode;
   animal?: AnimalCode;
   onCountryChange?: (c: CountryCode) => void;
