@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -15,6 +16,57 @@ type Row = {
   currency: string;
   active: boolean;
 };
+
+function PriceEditor({
+  row,
+  disabled,
+  onSave,
+  onToggle,
+}: {
+  row: Row;
+  disabled: boolean;
+  onSave: (id: string, price: number) => void;
+  onToggle: (id: string, active: boolean) => void;
+}) {
+  const [value, setValue] = useState(String(row.price));
+
+  useEffect(() => {
+    setValue(String(row.price));
+  }, [row.price]);
+
+  return (
+    <div className="flex items-center gap-3">
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          const nextValue = Number.parseInt(value, 10);
+
+          if (!Number.isFinite(nextValue) || nextValue <= 0) {
+            setValue(String(row.price));
+            return;
+          }
+
+          if (nextValue !== row.price) {
+            onSave(row.id, nextValue);
+          }
+        }}
+        className="h-8 w-24 rounded-full border-border/80 bg-background px-4 text-center text-sm font-medium shadow-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        aria-label={`سعر ${row.animal_code} في ${row.country_code}`}
+      />
+      <Switch
+        checked={row.active}
+        disabled={disabled}
+        onCheckedChange={(checked) => onToggle(row.id, checked)}
+        aria-label={`تفعيل ${row.animal_code} في ${row.country_code}`}
+      />
+    </div>
+  );
+}
 
 export default function Pricing() {
   const qc = useQueryClient();
@@ -60,13 +112,14 @@ export default function Pricing() {
         <h2 className="text-2xl font-bold">مصفوفة الأسعار</h2>
         <p className="text-sm text-muted-foreground">أسعار مسار التوزيع حسب الدولة ونوع الحيوان</p>
       </div>
-      <Card className="p-4 overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+      <Card className="overflow-hidden border-border/80 bg-card/90">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] table-fixed border-collapse text-sm">
           <thead>
             <tr className="text-xs text-muted-foreground border-b">
-              <th className="text-start py-2 px-3 font-medium w-24">الدولة</th>
+              <th className="w-24 px-4 py-3 text-start font-medium">الدولة</th>
               {animals.map((a) => (
-                <th key={a} className="text-start py-2 px-3 font-medium">{a}</th>
+                <th key={a} className="px-4 py-3 text-start font-medium">{a}</th>
               ))}
             </tr>
           </thead>
@@ -75,27 +128,25 @@ export default function Pricing() {
               const rows = (data ?? []).filter((r) => r.country_code === c);
               return (
                 <tr key={c} className="border-b last:border-0 align-middle">
-                  <td className="py-3 px-3 font-mono font-bold">{c}</td>
+                  <td className="px-4 py-4 font-mono text-base font-bold">{c}</td>
                   {animals.map((a) => {
                     const r = rows.find((x) => x.animal_code === a);
-                    if (!r) return <td key={a} className="py-3 px-3 text-muted-foreground">—</td>;
+                    if (!r) {
+                      return (
+                        <td key={a} className="px-4 py-4 text-center text-muted-foreground">
+                          —
+                        </td>
+                      );
+                    }
+
                     return (
-                      <td key={a} className="py-3 px-3">
-                        <div className="flex items-center gap-3">
-                          <Input
-                            type="number"
-                            defaultValue={String(r.price)}
-                            onBlur={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (v !== r.price) update.mutate({ id: r.id, patch: { price: v } });
-                            }}
-                            className="h-8 w-24"
-                          />
-                          <Switch
-                            checked={r.active}
-                            onCheckedChange={(v) => update.mutate({ id: r.id, patch: { active: v } })}
-                          />
-                        </div>
+                      <td key={a} className="px-4 py-4">
+                        <PriceEditor
+                          row={r}
+                          disabled={update.isPending}
+                          onSave={(id, price) => update.mutate({ id, patch: { price } })}
+                          onToggle={(id, active) => update.mutate({ id, patch: { active } })}
+                        />
                       </td>
                     );
                   })}
@@ -103,7 +154,8 @@ export default function Pricing() {
               );
             })}
           </tbody>
-        </table>
+          </table>
+        </div>
       </Card>
     </div>
   );
