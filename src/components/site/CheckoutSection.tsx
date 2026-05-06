@@ -187,6 +187,7 @@ export function CheckoutSection({ selection }: Props) {
           quantity,
           unit_price: selection.unitPrice,
           currency: paymentCurrency(locale),
+          captchaToken,
           card: {
             number: digits,
             holder: cardHolder.trim(),
