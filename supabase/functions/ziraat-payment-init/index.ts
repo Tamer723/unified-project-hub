@@ -132,6 +132,7 @@ Deno.serve(async (req) => {
     }
     let serverUnitPrice: number | null = null;
     let serverCurrency: string = currency;
+    let resolvedMatrixId: string | null = matrix_id ?? null;
 
     if (matrix_id) {
       const { data: m } = await supabase
@@ -163,6 +164,7 @@ Deno.serve(async (req) => {
         if (mrow) {
           serverUnitPrice = mrow.price;
           serverCurrency = mrow.currency;
+          resolvedMatrixId = mrow.id;
         }
       }
       if (serverUnitPrice == null) {
