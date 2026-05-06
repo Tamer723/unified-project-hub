@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, Grid3x3, Users, AlertCircle, Beef } from "lucide-react";
+import { LayoutDashboard, Package, Grid3x3, Users, AlertCircle, Beef, UserCircle } from "lucide-react";
 
 const items = [
   { title: "نظرة عامة", url: "/admin", icon: LayoutDashboard, end: true },
@@ -18,6 +18,7 @@ const items = [
   { title: "المنتجات", url: "/admin/products", icon: Package },
   { title: "مصفوفة الأسعار", url: "/admin/pricing", icon: Grid3x3 },
   { title: "المستخدمون", url: "/admin/users", icon: Users },
+  { title: "حسابي", url: "/admin/account", icon: UserCircle },
   { title: "سجل الفشل", url: "/admin/audit", icon: AlertCircle },
 ];
 
