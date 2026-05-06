@@ -378,6 +378,7 @@ export function CheckoutSection({ selection }: Props) {
                         <BrandLogo brand={cardBrand} />
                       </div>
                     </div>
+                    {errors.cc_number && <p className="mt-1 text-xs text-destructive">{errors.cc_number}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -387,11 +388,20 @@ export function CheckoutSection({ selection }: Props) {
                       </Label>
                       <Input
                         id="cc-exp"
+                        dir="ltr"
                         inputMode="numeric"
+                        autoComplete="cc-exp"
                         placeholder="MM / YY"
                         maxLength={7}
-                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          if (v.length >= 3) v = `${v.slice(0, 2)} / ${v.slice(2)}`;
+                          setCardExpiry(v);
+                        }}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
+                      {errors.cc_exp && <p className="mt-1 text-xs text-destructive">{errors.cc_exp}</p>}
                     </div>
                     <div>
                       <Label htmlFor="cc-cvc" className="text-brown-mid">
@@ -399,11 +409,17 @@ export function CheckoutSection({ selection }: Props) {
                       </Label>
                       <Input
                         id="cc-cvc"
+                        dir="ltr"
+                        type="password"
                         inputMode="numeric"
+                        autoComplete="cc-csc"
                         placeholder="123"
-                        maxLength={4}
-                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                        maxLength={cardBrand === "amex" ? 4 : 3}
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
+                      {errors.cc_cvc && <p className="mt-1 text-xs text-destructive">{errors.cc_cvc}</p>}
                     </div>
                   </div>
                 </div>
