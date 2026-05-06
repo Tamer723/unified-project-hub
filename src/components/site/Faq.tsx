@@ -10,7 +10,7 @@ export function Faq() {
   const { t } = useTranslation();
   const items = t("faq.items", { returnObjects: true }) as Array<{ q: string; a: string }>;
   return (
-    <section id="faq" className="bg-cream-dark/60 py-16 md:py-24">
+    <section id="faq" className="bg-background py-16 md:py-24">
       <div className="container max-w-3xl">
         <div className="mb-10 text-center">
           <span className="inline-block rounded-full bg-sand/20 px-4 py-1 text-xs font-bold text-brown-mid">
