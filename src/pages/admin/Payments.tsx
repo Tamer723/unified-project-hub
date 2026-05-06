@@ -43,7 +43,26 @@ const PROVIDER_INFO: Record<Provider, { title: string; desc: string; secretsGrou
   },
 };
 
-type SecretStatus = { nestpay_client_id: boolean; nestpay_store_key: boolean };
+type SecretStatus = {
+  nestpay_client_id: boolean;
+  nestpay_store_key: boolean;
+  iyzico_api_key: boolean;
+  iyzico_secret_key: boolean;
+};
+
+const GROUP_SECRETS: Record<"none" | "nestpay" | "iyzico", string[]> = {
+  none: [],
+  nestpay: ["NESTPAY_CLIENT_ID", "NESTPAY_STORE_KEY"],
+  iyzico: ["IYZICO_API_KEY", "IYZICO_SECRET_KEY"],
+};
+
+function getMissing(group: "none" | "nestpay" | "iyzico", s: SecretStatus | null): string[] {
+  if (!s || group === "none") return [];
+  if (group === "nestpay") {
+    return [!s.nestpay_client_id && "NESTPAY_CLIENT_ID", !s.nestpay_store_key && "NESTPAY_STORE_KEY"].filter(Boolean) as string[];
+  }
+  return [!s.iyzico_api_key && "IYZICO_API_KEY", !s.iyzico_secret_key && "IYZICO_SECRET_KEY"].filter(Boolean) as string[];
+}
 
 export default function Payments() {
   const [provider, setProvider] = useState<Provider>("mock");
