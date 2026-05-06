@@ -359,7 +359,7 @@ export function CheckoutSection({ selection }: Props) {
                 <div className="grid gap-4">
                   <div>
                     <Label htmlFor="cc-name" className="text-brown-mid">
-                      {locale === "ar" ? "الاسم على البطاقة" : locale === "tr" ? "Kart Üzerindeki İsim" : "Cardholder Name"}
+                      {locale === "ar" ? "الاسم على البطاقة (اختياري)" : locale === "tr" ? "Kart Üzerindeki İsim (opsiyonel)" : "Cardholder Name (optional)"}
                     </Label>
                     <Input
                       id="cc-name"
@@ -369,7 +369,6 @@ export function CheckoutSection({ selection }: Props) {
                       onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
                       className="mt-2 h-12 rounded-xl bg-cream-dark/60 uppercase"
                     />
-                    {errors.cc_name && <p className="mt-1 text-xs text-destructive">{errors.cc_name}</p>}
                   </div>
 
                   <div>
