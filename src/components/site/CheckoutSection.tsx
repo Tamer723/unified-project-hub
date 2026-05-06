@@ -577,6 +577,7 @@ export function CheckoutSection({ selection }: Props) {
                       : "Payment is securely processed via the local bank gateway."}
                 </p>
               </div>
+              )}
             </div>
           )}
 
