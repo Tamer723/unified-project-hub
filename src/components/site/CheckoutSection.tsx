@@ -76,12 +76,13 @@ export function CheckoutSection({ selection }: Props) {
     const digits = phone.replace(/\D/g, "");
     if (digits.length > 0) {
       if (digits.length < country.min || digits.length > country.max) {
+        const range = country.min === country.max ? `${country.min}` : `${country.min}-${country.max}`;
         e.phone =
           locale === "ar"
-            ? `رقم الهاتف يجب أن يكون بين ${country.min} و ${country.max} رقمًا`
+            ? `رقم الهاتف يجب أن يتكون من ${range} رقمًا`
             : locale === "tr"
-              ? `Telefon ${country.min}-${country.max} hane olmalı`
-              : `Phone must be ${country.min}-${country.max} digits`;
+              ? `Telefon ${range} hane olmalı`
+              : `Phone must be ${range} digits`;
       }
     }
     setErrors(e);
