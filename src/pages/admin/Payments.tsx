@@ -162,6 +162,8 @@ export default function Payments() {
           <RadioGroup value={provider} onValueChange={(v) => setProvider(v as Provider)} className="space-y-3">
             {(Object.keys(PROVIDER_INFO) as Provider[]).map((key) => {
               const pInfo = PROVIDER_INFO[key];
+              const itemMissing = getMissing(pInfo.secretsGroup, secrets);
+              const itemOk = pInfo.secretsGroup === "none" || (secrets && itemMissing.length === 0);
               return (
                 <label
                   key={key}
@@ -172,8 +174,8 @@ export default function Payments() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold">{pInfo.title}</span>
-                      {pInfo.needsSecrets && secrets && (
-                        secretsOk ? (
+                      {pInfo.secretsGroup !== "none" && secrets && (
+                        itemOk ? (
                           <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">
                             <CheckCircle2 className="h-3 w-3 me-1" /> الأسرار مهيّأة
                           </Badge>
@@ -185,9 +187,9 @@ export default function Payments() {
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">{pInfo.desc}</div>
-                    {pInfo.needsSecrets && secrets && !secretsOk && (
+                    {pInfo.secretsGroup !== "none" && secrets && !itemOk && (
                       <div className="text-xs text-destructive mt-2 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" /> الناقص: {missingList.join("، ")}
+                        <AlertTriangle className="h-3 w-3" /> الناقص: {itemMissing.join("، ")}
                       </div>
                     )}
                   </div>
@@ -198,10 +200,10 @@ export default function Payments() {
         </CardContent>
       </Card>
 
-      {info.needsSecrets && (
+      {currentGroup !== "none" && (
         <Card>
           <CardHeader>
-            <CardTitle>بيئة NestPay</CardTitle>
+            <CardTitle>إعدادات {currentGroup === "nestpay" ? "NestPay" : "iyzico"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!secretsOk && (
@@ -217,11 +219,11 @@ export default function Payments() {
 
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
-                <Label className="text-base">وضع الاختبار (Test)</Label>
+                <Label className="text-base">وضع الاختبار (Test / Sandbox)</Label>
                 <p className="text-sm text-muted-foreground">
-                  {testMode
-                    ? "يستخدم بيئة entegrasyon.asseco-see.com.tr (لا توجد عمليات حقيقية)"
-                    : "يستخدم بيئة الإنتاج sanalposprov.ziraatbank.com.tr"}
+                  {currentGroup === "iyzico"
+                    ? (testMode ? "sandbox-api.iyzipay.com" : "api.iyzipay.com (إنتاج)")
+                    : (testMode ? "entegrasyon.asseco-see.com.tr" : "sanalposprov.ziraatbank.com.tr")}
                 </p>
               </div>
               <Switch checked={testMode} onCheckedChange={setTestMode} />
@@ -231,15 +233,14 @@ export default function Payments() {
               <CheckCircle2 className="h-4 w-4" />
               <AlertTitle>الأسرار المطلوبة</AlertTitle>
               <AlertDescription className="space-y-1 mt-2 text-sm">
-                <div><code className="bg-muted px-1 rounded">NESTPAY_CLIENT_ID</code> — رقم التاجر من بنك زراعات</div>
-                <div><code className="bg-muted px-1 rounded">NESTPAY_STORE_KEY</code> — مفتاح التوقيع (Hash V3)</div>
-                <div><code className="bg-muted px-1 rounded">NESTPAY_HOST_URL_TEST</code> — اختياري (افتراضي: entegrasyon.asseco-see.com.tr)</div>
-                <div><code className="bg-muted px-1 rounded">NESTPAY_HOST_URL_PROD</code> — اختياري (افتراضي: sanalposprov.ziraatbank.com.tr)</div>
+                {GROUP_SECRETS[currentGroup].map((s) => (
+                  <div key={s}><code className="bg-muted px-1 rounded">{s}</code></div>
+                ))}
               </AlertDescription>
             </Alert>
 
             <div className="rounded-lg border p-4 space-y-2">
-              <Label>عنوان الـ Callback (سجِّله لدى البنك كـ okUrl و failUrl)</Label>
+              <Label>عنوان الـ Callback (سجِّله لدى البوابة)</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted p-2 rounded text-xs break-all" dir="ltr">{CALLBACK_URL}</code>
                 <Button size="sm" variant="outline" onClick={() => copy(CALLBACK_URL)}>
