@@ -68,12 +68,23 @@ Deno.serve(async (req) => {
     // iyzico 3DS sends: paymentId, conversationData, conversationId, status, mdStatus
     const iyzToken = params.token || "";
     const iyzPaymentId = params.paymentId || "";
-    const iyzConvId = params.conversationId || "";
-    const isIyzico = !!(iyzToken || iyzPaymentId) && !!iyzConvId;
+    let iyzConvId = params.conversationId || "";
+    const isIyzico = !!(iyzToken || iyzPaymentId);
 
     if (isIyzico) {
       const iyzApiKey = Deno.env.get("IYZICO_API_KEY");
       const iyzSecret = Deno.env.get("IYZICO_SECRET_KEY");
+
+      // Resolve order id by token when conversationId is absent (iyzico checkout often omits it)
+      if (!iyzConvId && iyzToken) {
+        const { data: byRef } = await supabase.from("orders")
+          .select("id").eq("provider_ref", iyzToken).maybeSingle();
+        if (byRef) iyzConvId = byRef.id;
+      }
+      if (!iyzConvId) {
+        console.error("iyzico callback: cannot resolve order", params);
+        return redirect(`${origin}/failed?reason=order_not_found`);
+      }
 
       const { data: ordRow } = await supabase.from("orders")
         .select("id, status, provider").eq("id", iyzConvId).maybeSingle();
