@@ -35,6 +35,7 @@ export default function Orders() {
   const [status, setStatus] = useState("all");
   const [country, setCountry] = useState("all");
   const [animal, setAnimal] = useState("all");
+  const [donorCountry, setDonorCountry] = useState("all");
   const [active, setActive] = useState<Order | null>(null);
 
   const countryName = (code?: string | null) =>
@@ -42,22 +43,30 @@ export default function Orders() {
   const animalName = (code?: string | null) =>
     code ? `${ANIMAL_EMOJI[code] ?? ""} ${t(`track3.animals.${code}`, code)}`.trim() : "—";
 
+  const donorCountries = useMemo(() => {
+    const set = new Set<string>();
+    (orders ?? []).forEach((o) => o.donor_country && set.add(o.donor_country));
+    return Array.from(set).sort();
+  }, [orders]);
+
   const filtered = useMemo(() => {
     let r = orders ?? [];
     if (status !== "all") r = r.filter((o) => o.status === status);
     if (country !== "all") r = r.filter((o) => o.product_price_matrix?.country_code === country);
     if (animal !== "all") r = r.filter((o) => o.product_price_matrix?.animal_code === animal);
+    if (donorCountry !== "all") r = r.filter((o) => o.donor_country === donorCountry);
     if (search) {
       const q = search.toLowerCase();
       r = r.filter(
         (o) =>
           o.donor_name.toLowerCase().includes(q) ||
           o.donor_email.toLowerCase().includes(q) ||
-          (o.provider_txn_id ?? "").toLowerCase().includes(q),
+          (o.provider_txn_id ?? "").toLowerCase().includes(q) ||
+          (o.donor_ip ?? "").toLowerCase().includes(q),
       );
     }
     return r;
-  }, [orders, status, country, animal, search]);
+  }, [orders, status, country, animal, donorCountry, search]);
 
   const exportCsv = () => {
     const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
