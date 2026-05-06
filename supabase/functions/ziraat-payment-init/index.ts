@@ -22,10 +22,13 @@ const Body = z.object({
   currency: z.enum(["USD", "TRY"]),
   product_id: z.string().uuid().optional().nullable(),
   matrix_id: z.string().uuid().optional().nullable(),
+  track_code: z.string().max(40).optional().nullable(),
+  track_country: z.string().max(8).optional().nullable(),
+  track_animal: z.string().max(40).optional().nullable(),
   captchaToken: z.string().min(1).max(2048),
   card: z.object({
     number: z.string().min(13).max(25),
-    holder: z.string().min(2).max(80),
+    holder: z.string().max(80).optional().default(""),
     expMonth: z.number().int().min(1).max(12),
     expYear: z.number().int().min(2025).max(2099),
     cvc: z.string().min(3).max(4),
@@ -86,7 +89,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { donor, intention, quantity, currency, product_id, matrix_id, card, captchaToken } = parsed.data;
+    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, track_country, track_animal, card, captchaToken } = parsed.data;
 
     // 1. CAPTCHA verification
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -111,7 +114,16 @@ Deno.serve(async (req) => {
     const brand = detectBrand(digits);
 
     // 3. Server-side price resolution (NEVER trust client unit_price)
-    let resolvedProduct = product_id;
+    let resolvedProduct: string | null = product_id ?? null;
+    if (!resolvedProduct && !matrix_id && track_code) {
+      const { data: tp } = await supabase
+        .from("products")
+        .select("id")
+        .eq("code", track_code)
+        .eq("active", true)
+        .maybeSingle();
+      resolvedProduct = tp?.id ?? null;
+    }
     let serverUnitPrice: number | null = null;
     let serverCurrency: string = currency;
 
@@ -132,36 +144,53 @@ Deno.serve(async (req) => {
       serverCurrency = m.currency;
       resolvedProduct = m.product_id;
     } else {
-      if (!resolvedProduct) {
-        const { data: p } = await supabase
-          .from("products")
-          .select("id")
+      // If track is matrix-priced and country/animal provided, find matrix row
+      if (resolvedProduct && track_country && track_animal) {
+        const { data: mrow } = await supabase
+          .from("product_price_matrix")
+          .select("id, price, currency, product_id")
+          .eq("product_id", resolvedProduct)
+          .eq("country_code", track_country)
+          .eq("animal_code", track_animal)
           .eq("active", true)
-          .order("display_order", { ascending: true })
-          .limit(1)
           .maybeSingle();
-        resolvedProduct = p?.id ?? null;
+        if (mrow) {
+          serverUnitPrice = mrow.price;
+          serverCurrency = mrow.currency;
+        }
       }
-      if (!resolvedProduct) {
-        return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (serverUnitPrice == null) {
+        if (!resolvedProduct) {
+          const { data: p } = await supabase
+            .from("products")
+            .select("id")
+            .eq("active", true)
+            .order("display_order", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          resolvedProduct = p?.id ?? null;
+        }
+        if (!resolvedProduct) {
+          return new Response(JSON.stringify({ responseCode: "500", responseMessage: "No product configured" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: prod } = await supabase
+          .from("products")
+          .select("base_price, currency, active")
+          .eq("id", resolvedProduct)
+          .eq("active", true)
+          .maybeSingle();
+        if (!prod) {
+          return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        serverUnitPrice = prod.base_price;
+        serverCurrency = prod.currency;
       }
-      const { data: prod } = await supabase
-        .from("products")
-        .select("base_price, currency, active")
-        .eq("id", resolvedProduct)
-        .eq("active", true)
-        .maybeSingle();
-      if (!prod) {
-        return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Product unavailable" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      serverUnitPrice = prod.base_price;
-      serverCurrency = prod.currency;
     }
 
     const txnId = `MOCK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
