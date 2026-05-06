@@ -650,6 +650,26 @@ export function CheckoutSection({ selection }: Props) {
           )}
         </div>
       </div>
+
+      {threeDSHtml && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md h-[600px] bg-white rounded-2xl overflow-hidden relative">
+            <button
+              onClick={() => setThreeDSHtml(null)}
+              className="absolute top-2 right-2 z-10 rounded-full bg-black/50 text-white w-8 h-8 text-sm"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <iframe
+              title="3DS Challenge"
+              srcDoc={threeDSHtml}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
