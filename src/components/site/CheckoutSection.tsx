@@ -456,6 +456,15 @@ export function CheckoutSection({ selection }: Props) {
             <span>{t("checkout.agree")}</span>
           </label>
 
+          {step === 2 && (
+            <div className="mt-4 flex justify-center">
+              <Turnstile
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+          )}
+
           <div className="mt-6 flex items-center justify-between gap-3">
             {step === 2 ? (
               <Button
