@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOrders, type Order } from "@/hooks/useAdminStats";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,23 +12,36 @@ import { Download, Loader2 } from "lucide-react";
 const fmt = (n: number, c: string) =>
   c === "USD" ? `$${n.toLocaleString("en-US")}` : `${n.toLocaleString("tr-TR")} ₺`;
 
-const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
-const trackVariant = (o: Order) => {
-  if (o.product_price_matrix) {
-    return `${o.product_price_matrix.country_code} · ${o.product_price_matrix.animal_code}`;
-  }
-  return null;
+const COUNTRY_CODES = ["JM", "WB", "LB", "SY", "SD", "YE", "BD"] as const;
+const ANIMAL_CODES = ["sheep", "cow_share"] as const;
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  JM: "🇵🇸", WB: "🇵🇸", LB: "🇱🇧", SY: "🇸🇾",
+  SD: "🇸🇩", YE: "🇾🇪", BD: "🇧🇩",
 };
+const ANIMAL_EMOJI: Record<string, string> = { sheep: "🐏", cow_share: "🐄" };
+
+const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
 
 export default function Orders() {
+  const { t } = useTranslation();
   const { data: orders, isLoading } = useOrders();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [country, setCountry] = useState("all");
+  const [animal, setAnimal] = useState("all");
   const [active, setActive] = useState<Order | null>(null);
+
+  const countryName = (code?: string | null) =>
+    code ? `${COUNTRY_FLAGS[code] ?? ""} ${t(`track3.countries.${code}`, code)}`.trim() : "—";
+  const animalName = (code?: string | null) =>
+    code ? `${ANIMAL_EMOJI[code] ?? ""} ${t(`track3.animals.${code}`, code)}`.trim() : "—";
 
   const filtered = useMemo(() => {
     let r = orders ?? [];
     if (status !== "all") r = r.filter((o) => o.status === status);
+    if (country !== "all") r = r.filter((o) => o.product_price_matrix?.country_code === country);
+    if (animal !== "all") r = r.filter((o) => o.product_price_matrix?.animal_code === animal);
     if (search) {
       const q = search.toLowerCase();
       r = r.filter(
@@ -38,19 +52,24 @@ export default function Orders() {
       );
     }
     return r;
-  }, [orders, status, search]);
+  }, [orders, status, country, animal, search]);
 
   const exportCsv = () => {
-    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "variant", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
-    const rows = filtered.map((o) =>
-      [
+    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "country_code", "country_name", "animal_code", "animal_name", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
+    const rows = filtered.map((o) => {
+      const cc = o.product_price_matrix?.country_code ?? "";
+      const ac = o.product_price_matrix?.animal_code ?? "";
+      return [
         o.id,
         o.created_at,
         o.donor_name,
         o.donor_email,
         o.products?.code ?? "",
         trackLabel(o),
-        trackVariant(o) ?? "",
+        cc,
+        cc ? t(`track3.countries.${cc}`, cc) : "",
+        ac,
+        ac ? t(`track3.animals.${ac}`, ac) : "",
         o.quantity,
         o.unit_price,
         o.total_amount,
@@ -59,10 +78,10 @@ export default function Orders() {
         o.provider_txn_id ?? "",
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    );
+        .join(",");
+    });
     const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -92,9 +111,7 @@ export default function Orders() {
             className="max-w-sm"
           />
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">كل الحالات</SelectItem>
               <SelectItem value="paid">paid</SelectItem>
@@ -102,6 +119,24 @@ export default function Orders() {
               <SelectItem value="pending">pending</SelectItem>
               <SelectItem value="awaiting_3ds">awaiting_3ds</SelectItem>
               <SelectItem value="expired">expired</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={country} onValueChange={setCountry}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="الدولة" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الدول</SelectItem>
+              {COUNTRY_CODES.map((c) => (
+                <SelectItem key={c} value={c}>{COUNTRY_FLAGS[c]} {t(`track3.countries.${c}`, c)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={animal} onValueChange={setAnimal}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="النوع" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الأنواع</SelectItem>
+              {ANIMAL_CODES.map((a) => (
+                <SelectItem key={a} value={a}>{ANIMAL_EMOJI[a]} {t(`track3.animals.${a}`, a)}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -126,32 +161,49 @@ export default function Orders() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((o) => (
-                  <tr
-                    key={o.id}
-                    onClick={() => setActive(o)}
-                    className="border-b last:border-0 cursor-pointer hover:bg-muted/40"
-                  >
-                    <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(o.created_at).toLocaleString("ar")}
-                    </td>
-                    <td className="py-2">
-                      <div>{o.donor_name}</div>
-                      <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
-                    </td>
-                    <td className="py-2">
-                      <div className="font-medium">{trackLabel(o)}</div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        {o.products?.code ?? "—"}{trackVariant(o) ? ` · ${trackVariant(o)}` : ""}
-                      </div>
-                    </td>
-                    <td className="py-2">{o.quantity}</td>
-                    <td className="py-2 font-mono">{fmt(o.total_amount, o.currency)}</td>
-                    <td className="py-2"><span className={statusBadge(o.status)}>{o.status}</span></td>
-                    <td className="py-2 font-mono text-xs">**** {o.card_meta?.last4 ?? "—"}</td>
-                    <td className="py-2 font-mono text-xs">{o.provider_txn_id ?? "—"}</td>
-                  </tr>
-                ))}
+                {filtered.map((o) => {
+                  const cc = o.product_price_matrix?.country_code;
+                  const ac = o.product_price_matrix?.animal_code;
+                  return (
+                    <tr
+                      key={o.id}
+                      onClick={() => setActive(o)}
+                      className="border-b last:border-0 cursor-pointer hover:bg-muted/40"
+                    >
+                      <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(o.created_at).toLocaleString("ar")}
+                      </td>
+                      <td className="py-2">
+                        <div>{o.donor_name}</div>
+                        <div className="text-[10px] text-muted-foreground">{o.donor_email}</div>
+                      </td>
+                      <td className="py-2">
+                        <div className="font-medium">{trackLabel(o)}</div>
+                        {cc || ac ? (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {cc && (
+                              <span className="inline-flex items-center rounded-full bg-sand/40 px-2 py-0.5 text-[10px] font-semibold text-brown">
+                                {COUNTRY_FLAGS[cc] ?? ""} {t(`track3.countries.${cc}`, cc)}
+                              </span>
+                            )}
+                            {ac && (
+                              <span className="inline-flex items-center rounded-full bg-green-pale px-2 py-0.5 text-[10px] font-semibold text-green">
+                                {ANIMAL_EMOJI[ac] ?? ""} {t(`track3.animals.${ac}`, ac)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-muted-foreground font-mono">{o.products?.code ?? "—"}</div>
+                        )}
+                      </td>
+                      <td className="py-2">{o.quantity}</td>
+                      <td className="py-2 font-mono">{fmt(o.total_amount, o.currency)}</td>
+                      <td className="py-2"><span className={statusBadge(o.status)}>{o.status}</span></td>
+                      <td className="py-2 font-mono text-xs">**** {o.card_meta?.last4 ?? "—"}</td>
+                      <td className="py-2 font-mono text-xs">{o.provider_txn_id ?? "—"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -170,8 +222,8 @@ export default function Orders() {
               <Row k="المسار" v={`${trackLabel(active)}${active.products?.code ? ` (${active.products.code})` : ""}`} />
               {active.product_price_matrix && (
                 <>
-                  <Row k="الدولة" v={active.product_price_matrix.country_code} />
-                  <Row k="الحيوان" v={active.product_price_matrix.animal_code} />
+                  <Row k="الدولة" v={countryName(active.product_price_matrix.country_code)} />
+                  <Row k="الحيوان" v={animalName(active.product_price_matrix.animal_code)} />
                 </>
               )}
               <Row k="المتبرع" v={active.donor_name} />
