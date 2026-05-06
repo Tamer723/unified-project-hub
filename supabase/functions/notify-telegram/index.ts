@@ -1,0 +1,140 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
+
+const STATUS_LABEL: Record<string, string> = {
+  paid: "✅ توكيل ناجح",
+  success: "✅ توكيل ناجح",
+  failed: "❌ فشل التوكيل",
+  cancelled: "🚫 تم الإلغاء",
+  expired: "⌛ منتهي الصلاحية",
+  awaiting_3ds: "🔐 بانتظار التحقق",
+  pending: "⏳ قيد الانتظار",
+};
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  SY: "🇸🇾", TR: "🇹🇷", SO: "🇸🇴", YE: "🇾🇪", PS: "🇵🇸", SD: "🇸🇩",
+};
+const COUNTRY_AR: Record<string, string> = {
+  SY: "سوريا", TR: "تركيا", SO: "الصومال", YE: "اليمن", PS: "فلسطين", SD: "السودان",
+};
+const ANIMAL_AR: Record<string, string> = {
+  sheep: "🐏 خروف",
+  goat: "🐐 ماعز",
+  cow_share: "🐄 سهم بقرة",
+  cow_full: "🐄 بقرة كاملة",
+};
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+async function sendTelegram(chatId: string, text: string) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
+  if (!LOVABLE_API_KEY || !TELEGRAM_API_KEY) throw new Error("Telegram credentials not configured");
+
+  const r = await fetch(`${GATEWAY_URL}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "X-Connection-Api-Key": TELEGRAM_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(`Telegram [${r.status}]: ${JSON.stringify(data)}`);
+  return data;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const chatId = Deno.env.get("TELEGRAM_ADMIN_CHAT_ID");
+    if (!chatId) {
+      return new Response(JSON.stringify({ error: "TELEGRAM_ADMIN_CHAT_ID is not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json().catch(() => ({}));
+
+    // Test message
+    if (body.test) {
+      await sendTelegram(chatId, "🔔 <b>رسالة تجريبية</b>\nالاتصال بتلغرام يعمل بشكل صحيح.");
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const orderId = body.order_id;
+    if (!orderId) {
+      return new Response(JSON.stringify({ error: "order_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("*, products(title_ar, code), product_price_matrix(country_code, animal_code)")
+      .eq("id", orderId)
+      .maybeSingle();
+
+    if (error || !order) {
+      return new Response(JSON.stringify({ error: "order not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const status = (body.status as string) || order.status;
+    const header = STATUS_LABEL[status] ?? `🔔 تحديث (${status})`;
+    const shortId = String(order.id).slice(0, 8).toUpperCase();
+    const product = (order as any).products?.title_ar || (order as any).products?.code || "—";
+    const matrix = (order as any).product_price_matrix;
+    const country = matrix?.country_code
+      ? `${COUNTRY_FLAGS[matrix.country_code] ?? ""} ${COUNTRY_AR[matrix.country_code] ?? matrix.country_code}`
+      : null;
+    const animal = matrix?.animal_code ? ANIMAL_AR[matrix.animal_code] ?? matrix.animal_code : null;
+
+    const lines: string[] = [];
+    lines.push(`<b>${header}</b> — <code>#${shortId}</code>`);
+    lines.push(`👤 <b>${escapeHtml(order.donor_name)}</b>`);
+    lines.push(`📧 ${escapeHtml(order.donor_email)}`);
+    if (order.donor_phone) lines.push(`📞 ${escapeHtml(order.donor_phone)}`);
+    lines.push(`📦 ${escapeHtml(product)}`);
+    if (country) lines.push(`🌍 ${country}`);
+    if (animal) lines.push(`${animal}`);
+    lines.push(`💰 ${order.unit_price} ${order.currency} × ${order.quantity} = <b>${order.total_amount} ${order.currency}</b>`);
+    if (order.intention) lines.push(`📝 ${escapeHtml(order.intention)}`);
+    if (order.failure_reason) lines.push(`⚠️ ${escapeHtml(order.failure_reason)}`);
+    lines.push(`🕐 ${new Date().toLocaleString("ar-SY", { timeZone: "Europe/Istanbul" })}`);
+
+    await sendTelegram(chatId, lines.join("\n"));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("notify-telegram error:", (e as Error).message);
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
