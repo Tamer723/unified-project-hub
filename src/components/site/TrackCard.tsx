@@ -164,10 +164,10 @@ export function TrackCard({
         </div>
         <Button
           onClick={handleChoose}
-          disabled={id === "track3" && (!country || !animal)}
+          disabled={disabled || (id === "track3" && (!country || !animal))}
           className="w-full rounded-full bg-green hover:bg-green-mid text-primary-foreground"
         >
-          {t("tracks.choose")}
+          {disabled ? t("tracks.unavailable") : t("tracks.choose")}
         </Button>
       </div>
     </article>
