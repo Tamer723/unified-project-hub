@@ -12,6 +12,7 @@ export type ProductRow = {
   code: string | null;
   base_price: number;
   pricing_type: string;
+  active: boolean;
 };
 
 export type MatrixRow = {
@@ -28,7 +29,7 @@ export function usePricing() {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const [products, matrix] = await Promise.all([
-        supabase.from("products").select("id, code, base_price, pricing_type").eq("active", true),
+        supabase.from("products").select("id, code, base_price, pricing_type, active"),
         supabase.from("product_price_matrix").select("id, product_id, country_code, animal_code, price").eq("active", true),
       ]);
       return {
@@ -37,6 +38,15 @@ export function usePricing() {
       };
     },
   });
+}
+
+export function isTrackActive(
+  trackCode: "track1" | "track2" | "track3",
+  data: { products: ProductRow[]; matrix: MatrixRow[] } | undefined,
+): boolean {
+  if (!data) return true;
+  const product = data.products.find((p) => p.code === trackCode);
+  return product ? product.active : false;
 }
 
 /** Resolve unit price (USD whole units) for track1/2/3 with DB → fallback. */
