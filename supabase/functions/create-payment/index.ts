@@ -77,6 +77,22 @@ Deno.serve(async (req) => {
     const total_amount = unit_price * quantity;
     const expires_at = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    let donorCountry = req.headers.get("cf-ipcountry") || req.headers.get("x-vercel-ip-country") || null;
+    if (!donorCountry && ip) {
+      try {
+        const ctrl = new AbortController();
+        const tm = setTimeout(() => ctrl.abort(), 1500);
+        const r = await fetch(`https://ipapi.co/${ip}/country/`, { signal: ctrl.signal });
+        clearTimeout(tm);
+        if (r.ok) {
+          const txt = (await r.text()).trim();
+          if (/^[A-Z]{2}$/.test(txt)) donorCountry = txt;
+        }
+      } catch (_e) { /* ignore */ }
+    }
+    if (donorCountry) donorCountry = donorCountry.toUpperCase();
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -91,6 +107,8 @@ Deno.serve(async (req) => {
         total_amount,
         currency,
         status: "pending",
+        donor_ip: ip,
+        donor_country: donorCountry,
         expires_at,
       })
       .select("id")
