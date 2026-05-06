@@ -1,12 +1,20 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Heart } from "lucide-react";
 import { useDirection } from "@/hooks/useDirection";
 import { Button } from "@/components/ui/button";
 
 const Success = () => {
+  const { t, i18n } = useTranslation();
+  const [params] = useSearchParams();
+  const lang = params.get("lang");
+  useEffect(() => {
+    if (lang && ["ar", "tr", "en"].includes(lang) && i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
   useDirection();
-  const { t } = useTranslation();
   return (
     <div className="grid min-h-screen place-items-center bg-cream px-4">
       <div className="w-full max-w-md rounded-2xl border border-sand/40 bg-card p-8 text-center shadow-elevated">
