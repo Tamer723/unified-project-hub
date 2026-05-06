@@ -1,68 +1,105 @@
+# لوحة تحكم المسؤول (Admin Dashboard)
 
-## الهدف
-تخزين الأسعار في قاعدة البيانات بالدولار/الليرة الكاملة (بدون سنت) بدل التخزين بالـ minor units، مع تنظيف كل كود التحويل (÷100 و ×100) من المشروع.
+تصميم مستوحى من **Untitled UI**: شريط جانبي ناعم، بطاقات بحدود رقيقة، ألوان محايدة + accent أخضر يطابق هوية الموقع، خطوط Inter، أيقونات lucide.
 
-## التغييرات في قاعدة البيانات (Migration)
+## 1) المصادقة والصلاحيات
 
-تحويل الأعمدة العددية من سنت إلى دولار كامل عبر القسمة على 100:
+- صفحة `/auth`: تسجيل دخول بالبريد + كلمة المرور (مع تبويب تسجيل عند الحاجة).
+- ضبط Auth: تعطيل تأكيد البريد لتسهيل أول دخول، تفعيل HIBP لحماية كلمات المرور.
+- استخدام جدول `user_roles` الموجود + الدالة `has_role('admin')` لحماية كل صفحات `/admin/*`.
+- مكوّن `RequireAdmin` يلتف حول الراوتات: يتحقق من الجلسة ثم من الدور؛ من ليس admin يُعاد توجيهه إلى `/`.
+- بذر أول مسؤول يدوياً عبر إدراج صف في `user_roles` بعد إنشاء الحساب الأول.
 
-```sql
--- products.base_price: 10000 → 100, 17500 → 175, 11500 → 115
-UPDATE public.products SET base_price = base_price / 100;
+## 2) هيكل التنقل
 
--- product_price_matrix.price: 11500 → 115, 25000 → 250, ...
-UPDATE public.product_price_matrix SET price = price / 100;
-
--- orders: نحدّث الأعمدة الموجودة (إن وجدت طلبات سابقة) للحفاظ على الاتساق
-UPDATE public.orders SET unit_price = unit_price / 100, total_amount = total_amount / 100;
-
--- تحديث RLS policy على orders لرفع حد المبلغ الأقصى (كان < 1000000 سنت = $10,000)
--- نُعيد إنشاؤه بحد منطقي بالدولار الكامل (مثلاً < 100000 = $100,000)
-DROP POLICY "Anonymous can create pending orders only" ON public.orders;
-CREATE POLICY "Anonymous can create pending orders only"
-ON public.orders FOR INSERT TO anon, authenticated
-WITH CHECK (
-  status = 'pending'
-  AND total_amount > 0
-  AND total_amount < 100000
-  AND quantity > 0 AND quantity <= 100
-  AND char_length(donor_name) BETWEEN 2 AND 80
-  AND char_length(donor_email) <= 255
-  AND donor_email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'
-  AND (donor_phone IS NULL OR char_length(donor_phone) <= 40)
-  AND provider_txn_id IS NULL AND card_meta IS NULL AND failure_reason IS NULL
-);
+```text
+/admin
+  ├── /             نظرة عامة (Overview)
+  ├── /orders       الطلبات
+  ├── /products     المنتجات
+  ├── /pricing      مصفوفة الأسعار (الدول × الحيوانات)
+  ├── /users        المستخدمون والأدوار
+  └── /audit        سجل الفشل والتدقيق
 ```
 
-تبقى الأعمدة `integer` لأن خياراتك بدون فواصل عشرية.
+شريط جانبي قابل للطي (shadcn `Sidebar` بنمط `collapsible="icon"`) + هيدر علوي فيه `SidebarTrigger`، بحث، مبدّل لغة، قائمة المستخدم (تسجيل الخروج).
 
-## التغييرات في الكود
+## 3) صفحة النظرة العامة — مؤشرات مالية + تشغيلية
 
-### 1) `src/hooks/usePricing.ts`
-حذف القسمة على 100:
-- `return Math.round(row.price / 100)` → `return row.price`
-- `return Math.round(product.base_price / 100)` → `return product.base_price`
+**بطاقات KPI (آخر 30 يوم + مقارنة بالشهر السابق):**
+- إجمالي الإيرادات (مجموع `total_amount` للطلبات `paid`) بالـ USD والـ TRY منفصلَين.
+- عدد الطلبات الناجحة / الفاشلة / المعلّقة + معدل النجاح %.
+- متوسط قيمة الطلب AOV.
+- إجمالي الأضاحي (مجموع `quantity` للطلبات الناجحة).
 
-### 2) `supabase/functions/ziraat-payment-init/index.ts`
-- `serverUnitPrice = m.price` و `mrow.price` و `prod.base_price` تبقى كما هي (لكن الآن قيم كاملة).
-- إرسال المبلغ للبنك: `amount: total` يبقى صحيحاً الآن (دولار كامل بدون قسمة).
-- تعديل `unit_price: z.number().int().min(1)` و الحدود العليا للـ validation لتعكس النطاق الجديد.
+**رسوم بيانية (recharts):**
+- خط الإيرادات اليومي (آخر 30 يوم).
+- أعمدة: عدد الطلبات حسب الحالة.
+- دائري/شريطي: التوزيع حسب المسار (track1/2/3).
+- شريطي: التوزيع حسب الدولة + نوع الحيوان (لطلبات track3).
+- جدول صغير: آخر 10 طلبات.
 
-### 3) `supabase/functions/create-payment/index.ts`
-- نفس الشيء: استخدام القيم مباشرة بدون أي تحويل.
+**سبب الفشل الأشهر** (تجميع `failure_reason`).
 
-### 4) `src/pages/Payment3DSMock.tsx`
-- `formatAmount(amount)` يعرض القيمة مباشرة (TRY/USD) بدون قسمة، ومع `toLocaleString` بدون كسور.
+## 4) صفحة الطلبات
 
-### 5) `src/components/site/CheckoutSection.tsx`
-- لا تغيير في المنطق (يستخدم `selection.unitPrice` المُحلّ مسبقاً من `usePricing`)، فقط التأكد أن `data.amount` المعروض في رابط 3DS هو دولار كامل.
+- جدول مع: التاريخ، المتبرع، البريد، المنتج/المسار، الكمية، المبلغ + العملة، الحالة (Badge ملون)، آخر 4 من البطاقة، رقم العملية.
+- فلاتر: الحالة، نطاق تاريخ، عملة، مسار، بحث بالاسم/البريد.
+- ترقيم صفحات + ترتيب.
+- شاشة تفاصيل (Sheet جانبي) تعرض كل الحقول + `card_meta` + سبب الفشل + زر تصدير CSV.
+- أزرار سريعة: تصدير الكل CSV، نسخ معرّف الطلب.
 
-### 6) `supabase/functions/payment-callback/index.ts`
-- مراجعة استخدام `total_amount` للتأكد من عدم وجود تحويل.
+## 5) صفحة المنتجات
 
-## النتيجة المتوقعة
-- في صفحة التحقق 3DS سيظهر `$175` أو `175 ₺` بدلاً من `10000`.
-- قاعدة البيانات تحتوي قيماً نظيفة (100, 175, 115, ...) مطابقة للأسعار المعروضة في الواجهة.
-- المبلغ المُرسل لبوابة زراعات بنك يكون بالقيمة الكاملة كما تتطلبه واجهتها.
+- بطاقات/جدول لكل منتج (track1/2/3): الكود، العناوين بالـ ar/en/tr، السعر الأساسي، العملة، فعّال؟، ترتيب العرض.
+- تعديل مباشر inline + إنشاء/أرشفة (toggle `active`).
+- رفع صورة `image_url` لاحقاً (storage) — اختياري في المرحلة الأولى.
 
-هل توافق على التنفيذ؟
+## 6) مصفوفة الأسعار
+
+- جدول مصفوفة: الصفوف = الدول، الأعمدة = sheep/cow_share، الخلية = السعر قابل للتعديل.
+- زر إضافة دولة جديدة + تفعيل/تعطيل صف.
+
+## 7) المستخدمون والأدوار
+
+- جدول مبسّط من `user_roles` + بريد المستخدم (عبر edge function تستعلم `auth.users` بـ service role).
+- إضافة/إزالة دور admin لمستخدم بمعرفه.
+
+## 8) سجل التدقيق
+
+- عرض الطلبات `failed` مع الأسباب لتشخيص مشاكل البوابة.
+- فلتر تاريخ ومسار.
+
+## 9) التحديث الدوري
+
+- `react-query` مع `refetchInterval: 30000` على كل الإحصائيات والجداول. زر تحديث يدوي في الهيدر.
+
+## 10) التصميم (Untitled UI flavor)
+
+- خلفية بيضاء/`bg-background`، بطاقات `border border-border rounded-xl shadow-sm`.
+- ألوان دلالية فقط من `index.css` (الأخضر الموجود كـ accent، رمادي محايد للنصوص).
+- أيقونات `lucide-react` بحجم 18-20.
+- جداول shadcn `Table` مع رؤوس صغيرة بحروف uppercase خفيفة.
+- Badges للحالات: paid=أخضر، failed=أحمر، pending/awaiting_3ds=أصفر، expired=رمادي.
+- دعم كامل RTL لأن الموقع متعدد اللغات.
+
+## التفاصيل التقنية
+
+**ملفات جديدة:**
+- `src/pages/Auth.tsx` — تسجيل دخول/إنشاء حساب.
+- `src/components/admin/RequireAdmin.tsx` — حارس الراوت.
+- `src/components/admin/AdminLayout.tsx` — Sidebar + Header + Outlet.
+- `src/components/admin/AppSidebar.tsx` — قائمة جانبية.
+- `src/pages/admin/Overview.tsx`, `Orders.tsx`, `Products.tsx`, `Pricing.tsx`, `Users.tsx`, `Audit.tsx`.
+- `src/hooks/useAdminStats.ts` — استعلامات التجميع.
+- `src/hooks/useAuth.ts` — جلسة + دور.
+
+**Edge function جديدة:** `admin-list-users` (تعيد قائمة المستخدمين بدمج `auth.users` مع `user_roles`، محمية بفحص `has_role('admin')` لمستدعيها).
+
+**تحديثات راوتنغ في `src/App.tsx`:** إضافة `/auth`, `/admin/*` مع `RequireAdmin`.
+
+**استعلامات الإحصائيات:** يتم تنفيذها من العميل مباشرة على جدول `orders` (RLS تسمح للمسؤولين فقط بقراءته)، باستخدام `select` مع تجميع في الكود؛ لا حاجة لجداول جديدة.
+
+**لا تغييرات في الـ schema** — جدول `user_roles` و`has_role` موجودان أصلاً وكافيان.
+
+هل توافق على البدء؟
