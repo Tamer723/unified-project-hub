@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TrackCard, type TrackId, type TrackSelection } from "./TrackCard";
-import { usePricing } from "@/hooks/usePricing";
+import { usePricing, isTrackActive } from "@/hooks/usePricing";
 import type { CountryCode, AnimalCode } from "@/lib/pricing";
 import type { Locale } from "@/lib/constants";
 
