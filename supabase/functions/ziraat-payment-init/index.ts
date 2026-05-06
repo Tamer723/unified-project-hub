@@ -22,10 +22,11 @@ const Body = z.object({
   currency: z.enum(["USD", "TRY"]),
   product_id: z.string().uuid().optional().nullable(),
   matrix_id: z.string().uuid().optional().nullable(),
+  track_code: z.string().max(40).optional().nullable(),
   captchaToken: z.string().min(1).max(2048),
   card: z.object({
     number: z.string().min(13).max(25),
-    holder: z.string().min(2).max(80),
+    holder: z.string().max(80).optional().default(""),
     expMonth: z.number().int().min(1).max(12),
     expYear: z.number().int().min(2025).max(2099),
     cvc: z.string().min(3).max(4),
