@@ -315,7 +315,7 @@ export function CheckoutSection({ selection }: Props) {
                     inputMode="numeric"
                     placeholder="5XX XXX XX XX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                    onChange={(e) => { const v = e.target.value.replace(/[^\d\s]/g, ""); setPhone(v); clearError("phone"); }}
                     className="h-12 flex-1 rounded-xl bg-cream-dark/60 text-left"
                   />
                 </div>
