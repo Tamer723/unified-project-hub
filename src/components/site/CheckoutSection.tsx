@@ -148,6 +148,12 @@ export function CheckoutSection({ selection }: Props) {
     }
     if (!validateInfo()) return;
     setStep(2);
+    requestAnimationFrame(() => {
+      const el = document.getElementById("checkout");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => document.getElementById("cc-name")?.focus(), 350);
+    });
   };
 
   const cardNumberValid = isValidCardNumber(cardNumber);
