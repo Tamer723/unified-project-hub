@@ -38,6 +38,44 @@ const COUNTRIES = [
   { code: "US", flag: "🇺🇸", dial: "+1", min: 10, max: 10 },
 ];
 
+type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "troy" | "unknown";
+
+function detectCardBrand(digits: string): CardBrand {
+  if (/^4/.test(digits)) return "visa";
+  if (/^3[47]/.test(digits)) return "amex";
+  if (/^(5[1-5]|2(2(2[1-9]|[3-9]\d)|[3-6]\d{2}|7([01]\d|20)))/.test(digits)) return "mastercard";
+  if (/^(6011|65|64[4-9])/.test(digits)) return "discover";
+  if (/^9792/.test(digits)) return "troy";
+  return "unknown";
+}
+
+function formatCardNumber(raw: string, brand: CardBrand): string {
+  const digits = raw.replace(/\D/g, "").slice(0, brand === "amex" ? 15 : 16);
+  if (brand === "amex") {
+    // 4-6-5
+    return [digits.slice(0, 4), digits.slice(4, 10), digits.slice(10, 15)]
+      .filter(Boolean)
+      .join(" ");
+  }
+  return digits.match(/.{1,4}/g)?.join(" ") ?? "";
+}
+
+function BrandLogo({ brand }: { brand: CardBrand }) {
+  const base = "flex h-7 min-w-[44px] items-center justify-center rounded px-1.5 text-[10px] font-black tracking-tight";
+  if (brand === "visa") return <span className={cn(base, "bg-[#1A1F71] text-white")}>VISA</span>;
+  if (brand === "mastercard")
+    return (
+      <span className="relative flex h-7 w-11 items-center">
+        <span className="absolute left-0 h-6 w-6 rounded-full bg-[#EB001B]" />
+        <span className="absolute left-4 h-6 w-6 rounded-full bg-[#F79E1B] mix-blend-multiply" />
+      </span>
+    );
+  if (brand === "amex") return <span className={cn(base, "bg-[#2E77BC] text-white")}>AMEX</span>;
+  if (brand === "discover") return <span className={cn(base, "bg-[#FF6000] text-white")}>DISC</span>;
+  if (brand === "troy") return <span className={cn(base, "bg-[#00A0E3] text-white")}>TROY</span>;
+  return <CreditCard className="h-5 w-5 text-brown-mid/50" />;
+}
+
 type Props = {
   selection: TrackSelection | null;
   onChangeSelection: (sel: TrackSelection) => void;
