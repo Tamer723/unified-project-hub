@@ -224,7 +224,10 @@ export function CheckoutSection({ selection }: Props) {
       toast.error(t("checkout.select_first"));
       return;
     }
-    if (cardOnSite && !validateCard()) return;
+    // Always re-fetch active provider before paying to avoid stale provider (e.g. after returning from success page)
+    const currentProvider = (await fetchProvider()) ?? activeProvider;
+    const currentCardOnSite = currentProvider === "mock" || currentProvider === "nestpay_3d" || currentProvider === "iyzico_3ds";
+    if (currentCardOnSite && !validateCard()) return;
     if (!captchaToken) {
       toast.error(locale === "ar" ? "يرجى إكمال التحقق الأمني" : locale === "tr" ? "Güvenlik doğrulamasını tamamlayın" : "Please complete the security check");
       return;
@@ -232,7 +235,7 @@ export function CheckoutSection({ selection }: Props) {
 
     setPaying(true);
     try {
-      const cardPayload = cardOnSite
+      const cardPayload = currentCardOnSite
         ? (() => {
             const [mm, yy] = cardExpiry.split("/").map((s) => s.trim());
             const digits = cardNumber.replace(/\D/g, "");
