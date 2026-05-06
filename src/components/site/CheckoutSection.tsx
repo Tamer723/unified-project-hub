@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Lock } from "lucide-react";
@@ -7,35 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/pricing";
 import type { Locale } from "@/lib/constants";
-import type { TrackSelection, TrackId } from "./TrackCard";
-import { usePricing } from "@/hooks/usePricing";
-import { resolveTrackPrice, type ProductRow, type MatrixRow } from "@/hooks/usePricing";
+import type { TrackSelection } from "./TrackCard";
 
 type Props = {
   selection: TrackSelection | null;
   onChangeSelection: (sel: TrackSelection) => void;
 };
 
-const TRACK_IDS: TrackId[] = ["track1", "track2", "track3"];
-
-export function CheckoutSection({ selection, onChangeSelection }: Props) {
+export function CheckoutSection({ selection }: Props) {
   const { t, i18n } = useTranslation();
   const locale = (i18n.language?.split("-")[0] || "ar") as Locale;
   const navigate = useNavigate();
-  const { data: pricingData } = usePricing();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [quantity, setQuantity] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,29 +30,16 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
   const [agree, setAgree] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // when user picks a track from cards above, advance to step 2 automatically
-  useEffect(() => {
-    if (selection && step === 1) {
-      setStep(2);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection?.trackId, selection?.unitPrice]);
-
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
 
   const trackLabel = useMemo(() => {
-    if (!selection) return "—";
+    if (!selection) return t("checkout.select_first");
     const base = `${t(`${selection.trackId}.title`)} — ${t(`${selection.trackId}.tagline`)}`;
     return `${base} | ${formatPrice(selection.unitPrice, locale)}`;
   }, [selection, locale, t]);
 
-  const handleTrackChange = (id: TrackId) => {
-    const price = resolveTrackPrice(id, pricingData);
-    onChangeSelection({ trackId: id, unitPrice: price });
-  };
-
-  const validateStep2 = () => {
+  const validateInfo = () => {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = t("form.errors.name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("form.errors.email");
@@ -74,12 +48,12 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
   };
 
   const handleNext = () => {
-    if (step === 1 && !selection) {
+    if (!selection) {
       toast.error(t("checkout.select_first"));
       return;
     }
-    if (step === 2 && !validateStep2()) return;
-    setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
+    if (!validateInfo()) return;
+    setStep(2);
   };
 
   const handlePay = () => {
@@ -105,67 +79,43 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
         </div>
 
         <div className="mx-auto max-w-3xl rounded-3xl border border-sand/40 bg-card p-5 shadow-soft md:p-8">
-          {/* Stepper */}
           <Stepper step={step} />
 
-          {/* Step 1 - selection */}
-          {step === 1 && (
-            <div className="mt-8 space-y-5">
-              <div>
-                <Label className="text-brown-mid">{t("checkout.selected_track")}</Label>
-                <Select
-                  value={selection?.trackId}
-                  onValueChange={(v) => handleTrackChange(v as TrackId)}
-                >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-brown">
-                    <SelectValue placeholder={t("checkout.select_first")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRACK_IDS.map((id) => {
-                      const price = resolveTrackPrice(id, pricingData);
-                      return (
-                        <SelectItem key={id} value={id}>
-                          {t(`${id}.title`)} — {formatPrice(price, locale)}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="qty" className="text-brown-mid">
-                    {t("form.quantity")}
-                  </Label>
-                  <Input
-                    id="qty"
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                    className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="intent" className="text-brown-mid">
-                    {t("form.intention")}
-                  </Label>
-                  <Input
-                    id="intent"
-                    placeholder={locale === "ar" ? "اختياري" : "Optional"}
-                    value={intention}
-                    onChange={(e) => setIntention(e.target.value)}
-                    className="mt-2 h-12 rounded-xl bg-cream-dark/60"
-                  />
-                </div>
-              </div>
+          {/* Track summary */}
+          <div className="mt-6 rounded-2xl border border-sand/30 bg-cream-dark/40 p-4">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-brown-mid">
+              {t("checkout.selected_track")}
             </div>
-          )}
+            <div className="mt-1 text-sm font-bold text-brown">{trackLabel}</div>
+          </div>
 
-          {/* Step 2 - details */}
-          {step === 2 && (
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
+          {step === 1 && (
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div>
+                <Label htmlFor="qty" className="text-brown-mid">
+                  {t("form.quantity")}
+                </Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                />
+              </div>
+              <div>
+                <Label htmlFor="intent" className="text-brown-mid">
+                  {t("form.intention")}
+                </Label>
+                <Input
+                  id="intent"
+                  placeholder={locale === "ar" ? "اختياري" : "Optional"}
+                  value={intention}
+                  onChange={(e) => setIntention(e.target.value)}
+                  className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                />
+              </div>
               <div>
                 <Label htmlFor="name" className="text-brown-mid">
                   {t("form.name")} *
@@ -193,22 +143,11 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
                 />
                 {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
               </div>
-              <div className="md:col-span-2">
-                <Label className="text-brown-mid">{t("form.intention")}</Label>
-                <Textarea
-                  rows={2}
-                  value={intention}
-                  onChange={(e) => setIntention(e.target.value)}
-                  className="mt-2 rounded-xl bg-cream-dark/60"
-                />
-              </div>
             </div>
           )}
 
-          {/* Step 3 - pay */}
-          {step === 3 && (
-            <div className="mt-8 space-y-3 rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm">
-              <Row k={t("checkout.selected_track")} v={trackLabel} />
+          {step === 2 && (
+            <div className="mt-5 space-y-3 rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm">
               <Row k={t("form.name")} v={name} />
               <Row k={t("form.email")} v={email} />
               <Row k={t("form.quantity")} v={String(quantity)} />
@@ -216,13 +155,11 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
             </div>
           )}
 
-          {/* Total bar */}
           <div className="mt-6 flex items-center justify-between rounded-2xl bg-green px-5 py-4 text-primary-foreground">
             <span className="text-2xl font-black">{formatPrice(total, locale)}</span>
             <span className="text-sm font-bold opacity-90">{t("checkout.total")}</span>
           </div>
 
-          {/* Agree */}
           <label className="mt-4 flex items-start gap-2 text-xs text-brown-mid">
             <Checkbox
               checked={agree}
@@ -232,9 +169,8 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
             <span>{t("checkout.agree")}</span>
           </label>
 
-          {/* Actions */}
           <div className="mt-6 flex items-center justify-between gap-3">
-            {step === 3 ? (
+            {step === 2 ? (
               <Button
                 onClick={handlePay}
                 size="lg"
@@ -262,9 +198,9 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
             </div>
           </div>
 
-          {step > 1 && (
+          {step === 2 && (
             <button
-              onClick={() => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3))}
+              onClick={() => setStep(1)}
               className="mt-4 text-xs text-brown-mid hover:text-brown underline"
             >
               {t("checkout.back")}
@@ -276,29 +212,26 @@ export function CheckoutSection({ selection, onChangeSelection }: Props) {
   );
 }
 
-function Stepper({ step }: { step: 1 | 2 | 3 }) {
+function Stepper({ step }: { step: 1 | 2 }) {
   const { t } = useTranslation();
   const labels = [
-    { n: "01", k: "select" },
-    { n: "02", k: "info" },
-    { n: "03", k: "pay" },
+    { n: "01", k: "info" },
+    { n: "02", k: "pay" },
   ] as const;
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2">
       {labels.map((l, i) => {
-        const idx = (i + 1) as 1 | 2 | 3;
+        const idx = (i + 1) as 1 | 2;
         const active = step === idx;
         return (
           <div
             key={l.k}
             className={cn(
               "rounded-2xl px-4 py-3 text-center transition-colors",
-              active
-                ? "bg-green text-primary-foreground"
-                : "bg-cream-dark/60 text-brown-mid",
+              active ? "bg-green text-primary-foreground" : "bg-cream-dark/60 text-brown-mid",
             )}
           >
-            <div className={cn("text-[11px] font-bold opacity-80")}>{l.n}</div>
+            <div className="text-[11px] font-bold opacity-80">{l.n}</div>
             <div className="text-sm font-bold">{t(`checkout.steps.${l.k}`)}</div>
           </div>
         );
@@ -315,6 +248,3 @@ function Row({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
-
-// Re-export pricing helpers locally avoided; types-only
-export type { ProductRow, MatrixRow };
