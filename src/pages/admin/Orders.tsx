@@ -41,9 +41,23 @@ export default function Orders() {
   }, [orders, status, search]);
 
   const exportCsv = () => {
-    const headers = ["id", "created_at", "donor_name", "donor_email", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
+    const headers = ["id", "created_at", "donor_name", "donor_email", "track_code", "track_title", "variant", "quantity", "unit_price", "total_amount", "currency", "status", "txn"];
     const rows = filtered.map((o) =>
-      [o.id, o.created_at, o.donor_name, o.donor_email, o.quantity, o.unit_price, o.total_amount, o.currency, o.status, o.provider_txn_id ?? ""]
+      [
+        o.id,
+        o.created_at,
+        o.donor_name,
+        o.donor_email,
+        o.products?.code ?? "",
+        trackLabel(o),
+        trackVariant(o) ?? "",
+        o.quantity,
+        o.unit_price,
+        o.total_amount,
+        o.currency,
+        o.status,
+        o.provider_txn_id ?? "",
+      ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
