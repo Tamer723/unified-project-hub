@@ -430,10 +430,10 @@ export function CheckoutSection({ selection }: Props) {
               {!cardOnSite && (
                 <div className="rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm text-brown-mid">
                   {locale === "ar"
-                    ? "سيتم تحويلك إلى صفحة الدفع الآمنة لبنك زراعات لإدخال بيانات بطاقتك."
+                    ? "سيتم تحويلك إلى صفحة الدفع الآمنة لإدخال بيانات بطاقتك."
                     : locale === "tr"
-                      ? "Kart bilgilerinizi girmek için Ziraat Bankası'nın güvenli ödeme sayfasına yönlendirileceksiniz."
-                      : "You will be redirected to Ziraat Bank's secure payment page to enter your card details."}
+                      ? "Kart bilgilerinizi girmek için güvenli ödeme sayfasına yönlendirileceksiniz."
+                      : "You will be redirected to the secure payment page to enter your card details."}
                 </div>
               )}
 
