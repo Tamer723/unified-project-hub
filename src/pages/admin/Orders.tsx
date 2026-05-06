@@ -155,6 +155,15 @@ export default function Orders() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={donorCountry} onValueChange={setDonorCountry}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="دولة المتبرع" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل دول المتبرعين</SelectItem>
+              {donorCountries.map((c) => (
+                <SelectItem key={c} value={c}>{isoFlag(c)} {c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
