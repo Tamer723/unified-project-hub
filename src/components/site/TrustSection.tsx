@@ -28,7 +28,7 @@ export function TrustSection() {
   };
 
   return (
-    <section id="trust" className="bg-cream-dark/60 py-16 md:py-24">
+    <section id="trust" className="bg-cream py-16 md:py-24">
       <div className="container">
         <div className="mb-10 text-center">
           <span className="inline-block rounded-full bg-sand/30 px-4 py-1 text-xs font-bold text-brown-mid">
