@@ -60,7 +60,6 @@ export default function Overview() {
           hint={`${stats.pending} معلّقة`}
           icon={AlertTriangle}
         />
-        <StatCard label="متوسط الطلب" value={fmtUsd(Math.round(stats.aov))} icon={ShoppingCart} />
         <StatCard label="إجمالي الأضاحي" value={String(stats.animals)} icon={Beef} />
       </div>
 
