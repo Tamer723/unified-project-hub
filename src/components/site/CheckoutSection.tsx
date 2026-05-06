@@ -259,7 +259,7 @@ export function CheckoutSection({ selection }: Props) {
                   id="name"
                   placeholder={locale === "ar" ? "اكتب اسمك الكامل" : "Your full name"}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); if (e.target.value.trim().length >= 2) clearError("name"); }}
                   className="mt-2 h-12 rounded-xl bg-cream-dark/60"
                 />
                 {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
