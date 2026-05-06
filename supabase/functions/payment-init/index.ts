@@ -211,6 +211,8 @@ Deno.serve(async (req) => {
       status: activeProvider === "mock" ? "awaiting_3ds" : "pending",
       provider: activeProvider, provider_txn_id: txnId,
       card_meta: card ? { last4, bin, brand, holder: card.holder } : null,
+      donor_ip: ip,
+      donor_country: donorCountry,
       expires_at,
       metadata: { lang, origin: safeOrigin },
     }).select("id").single();
