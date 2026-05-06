@@ -48,9 +48,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (req.method === "POST") {
-      const body = await req.json();
-      const { action, user_id } = body ?? {};
+    let body: any = null;
+    try {
+      const text = await req.text();
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = null;
+    }
+    const { action, user_id } = body ?? {};
+
+    if (req.method === "POST" && action) {
       if (action === "grant_admin" && user_id) {
         const { error } = await admin.from("user_roles").insert({ user_id, role: "admin" });
         if (error && !error.message.includes("duplicate")) throw error;
