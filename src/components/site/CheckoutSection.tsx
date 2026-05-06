@@ -108,6 +108,16 @@ export function CheckoutSection({ selection }: Props) {
   const [agree, setAgree] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeProvider, setActiveProvider] = useState<"mock" | "nestpay_3d" | "nestpay_hosting">("mock");
+
+  useEffect(() => {
+    supabase.rpc("get_active_payment_provider").then(({ data }) => {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.active_provider) setActiveProvider(row.active_provider as typeof activeProvider);
+    });
+  }, []);
+
+  const cardOnSite = activeProvider !== "nestpay_hosting";
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
