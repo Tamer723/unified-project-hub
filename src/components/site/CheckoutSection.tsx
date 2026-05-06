@@ -147,11 +147,92 @@ export function CheckoutSection({ selection }: Props) {
           )}
 
           {step === 2 && (
-            <div className="mt-5 space-y-3 rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm">
-              <Row k={t("form.name")} v={name} />
-              <Row k={t("form.email")} v={email} />
-              <Row k={t("form.quantity")} v={String(quantity)} />
-              {intention && <Row k={t("form.intention")} v={intention} />}
+            <div className="mt-5 space-y-5">
+              <div className="space-y-3 rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm">
+                <Row k={t("form.name")} v={name} />
+                <Row k={t("form.email")} v={email} />
+                <Row k={t("form.quantity")} v={String(quantity)} />
+                {intention && <Row k={t("form.intention")} v={intention} />}
+              </div>
+
+              <div className="rounded-2xl border border-sand/40 bg-card p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-brown">
+                    {locale === "ar" ? "بيانات البطاقة" : locale === "tr" ? "Kart Bilgileri" : "Card Details"}
+                  </h3>
+                  <div className="flex items-center gap-1 text-xs text-brown-mid">
+                    <Lock className="h-3 w-3" />
+                    <span>{locale === "ar" ? "اتصال مشفّر" : locale === "tr" ? "Şifreli" : "Encrypted"}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="cc-name" className="text-brown-mid">
+                      {locale === "ar" ? "الاسم على البطاقة" : locale === "tr" ? "Kart Üzerindeki İsim" : "Cardholder Name"}
+                    </Label>
+                    <Input
+                      id="cc-name"
+                      placeholder={locale === "ar" ? "كما يظهر على البطاقة" : "JOHN DOE"}
+                      className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cc-number" className="text-brown-mid">
+                      {locale === "ar" ? "رقم البطاقة" : locale === "tr" ? "Kart Numarası" : "Card Number"}
+                    </Label>
+                    <div className="relative mt-2">
+                      <Input
+                        id="cc-number"
+                        inputMode="numeric"
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                        className="h-12 rounded-xl bg-cream-dark/60 pe-20 tracking-widest"
+                      />
+                      <div className="absolute inset-y-0 end-3 flex items-center gap-1">
+                        <span className="rounded bg-brown px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">VISA</span>
+                        <span className="rounded bg-sand px-1.5 py-0.5 text-[10px] font-bold text-brown">MC</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="cc-exp" className="text-brown-mid">
+                        {locale === "ar" ? "تاريخ الانتهاء" : locale === "tr" ? "Son Kullanma" : "Expiry"}
+                      </Label>
+                      <Input
+                        id="cc-exp"
+                        inputMode="numeric"
+                        placeholder="MM / YY"
+                        maxLength={7}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cc-cvc" className="text-brown-mid">
+                        CVC
+                      </Label>
+                      <Input
+                        id="cc-cvc"
+                        inputMode="numeric"
+                        placeholder="123"
+                        maxLength={4}
+                        className="mt-2 h-12 rounded-xl bg-cream-dark/60"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-[11px] text-brown-mid">
+                  {locale === "ar"
+                    ? "ستتم معالجة الدفع عبر بوابة البنك المحلي بشكل آمن."
+                    : locale === "tr"
+                      ? "Ödeme yerel banka ağ geçidi üzerinden güvenli şekilde işlenir."
+                      : "Payment is securely processed via the local bank gateway."}
+                </p>
+              </div>
             </div>
           )}
 
