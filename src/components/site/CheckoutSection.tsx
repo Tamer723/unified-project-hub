@@ -97,7 +97,7 @@ export function CheckoutSection({ selection }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intention, setIntention] = useState("");
-  const [dialCode, setDialCode] = useState("+90");
+  const [countryCode, setCountryCode] = useState<CountryCode>("TR");
   const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const cardBrand = detectCardBrand(cardNumber.replace(/\D/g, ""));
