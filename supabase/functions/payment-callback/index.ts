@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       let path = "";
       let body: Record<string, unknown> = {};
       if (iyzToken) {
-        path = "/payment/iyzipay/checkoutform/auth/ecom/detail";
+        path = "/payment/iyzipos/checkoutform/auth/ecom/detail/";
         body = { locale: "tr", conversationId: iyzConvId, token: iyzToken };
       } else {
         path = "/payment/3dsecure/auth";
