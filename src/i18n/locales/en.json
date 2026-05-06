@@ -79,6 +79,20 @@
     },
     "animals": { "sheep": "Sheep / Goat", "cow_share": "1/7 Cow Share" }
   },
+  "checkout": {
+    "eyebrow": "Complete your delegation",
+    "title": "Three steps and your trust is fulfilled",
+    "subtitle": "Choose your pathway, enter your details, then continue to payment — all in one place.",
+    "steps": { "select": "Selection", "info": "Your details", "pay": "Payment" },
+    "selected_track": "Selected pathway",
+    "next": "Next →",
+    "back": "← Back",
+    "pay_cta": "Continue to payment →",
+    "secure": "Secure encrypted payment",
+    "agree": "I authorize Quds Waqf to perform the sacrifice per the selected option and wish to receive documentation after execution.",
+    "total": "Grand total",
+    "select_first": "Select a pathway above to begin"
+  },
   "form": {
     "title": "Complete Your Qurbani Mandate",
     "steps": { "info": "Your details", "pay": "Payment" },
