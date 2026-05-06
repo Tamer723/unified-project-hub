@@ -451,7 +451,14 @@ export function CheckoutSection({ selection }: Props) {
                         onChange={(e) => {
                           const v = e.target.value.replace(/\D/g, "").slice(0, 4);
                           setCardCvc(v);
-                          if (isValidCvc(v, cardBrand)) clearError("cc_cvc");
+                          const need = cardBrand === "amex" ? 4 : 3;
+                          if (isValidCvc(v, cardBrand)) {
+                            clearError("cc_cvc");
+                          } else if (v.length >= need) {
+                            setErrors((p) => ({ ...p, cc_cvc: "CVC" }));
+                          } else {
+                            clearError("cc_cvc");
+                          }
                         }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
                       />
