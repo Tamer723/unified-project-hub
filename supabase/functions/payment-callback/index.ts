@@ -22,18 +22,28 @@ async function hashV3(params: Record<string, string>, storeKey: string): Promise
   return encodeBase64(new Uint8Array(digest));
 }
 
-function siteOrigin(req: Request): string {
-  // Prefer Origin/Referer if present, else fall back to a configured site URL or hardcoded.
-  const ref = req.headers.get("referer");
-  if (ref) {
-    try {
-      const u = new URL(ref);
-      // Ignore referers from payment providers (iyzico, nestpay, etc.) — use site URL instead
-      const isProvider = /iyzipay|iyzico|asseco|ziraat|nestpay/i.test(u.host);
-      if (!isProvider) return `${u.protocol}//${u.host}`;
-    } catch { /* ignore */ }
-  }
-  return Deno.env.get("PUBLIC_SITE_URL") || "https://campaign.4c.studio";
+const ALLOWED_ORIGINS = [
+  "https://campaign.4c.studio",
+  "https://the-app-orchestrator.lovable.app",
+  "https://id-preview--ff5a8523-0fdd-4449-839a-bdf5d5066659.lovable.app",
+];
+
+function safeOriginFrom(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const u = new URL(value);
+    const host = u.host;
+    if (ALLOWED_ORIGINS.includes(`${u.protocol}//${host}`)) return `${u.protocol}//${host}`;
+    if (/\.lovable\.(app|dev)$/.test(host)) return `${u.protocol}//${host}`;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function siteOrigin(req: Request, queryOrigin: string | null, metaOrigin: string | null): string {
+  return safeOriginFrom(queryOrigin)
+    || safeOriginFrom(metaOrigin)
+    || Deno.env.get("PUBLIC_SITE_URL")
+    || "https://campaign.4c.studio";
 }
 
 function redirect(url: string): Response {
