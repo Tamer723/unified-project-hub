@@ -9,10 +9,7 @@ verify_jwt = false
 [functions.payment-init]
 verify_jwt = false
 
-[functions.ziraat-payment-init]
-verify_jwt = false
-
-[functions.ziraat-payment-verify]
+[functions.payment-mock-verify]
 verify_jwt = false
 
 [functions.payment-config-check]

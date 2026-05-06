@@ -24,64 +24,57 @@ Deno.serve(async (req) => {
     const parsed = Body.safeParse(await req.json());
     if (!parsed.success) {
       return new Response(JSON.stringify({ approved: false, responseCode: "400", responseMessage: "Invalid input" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const { order_id, otp } = parsed.data;
 
-    const { data: order, error: oErr } = await supabase
+    const { data: order } = await supabase
       .from("orders")
-      .select("id, status")
+      .select("id, status, provider")
       .eq("id", order_id)
-      .single();
+      .maybeSingle();
 
-    if (oErr || !order) {
+    if (!order) {
       return new Response(JSON.stringify({ approved: false, responseCode: "404", responseMessage: "Order not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
+    // Only mock orders allowed here
+    if (order.provider !== "mock") {
+      return new Response(JSON.stringify({ approved: false, responseCode: "403", responseMessage: "Not a mock order" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (order.status !== "awaiting_3ds") {
       return new Response(JSON.stringify({ approved: false, responseCode: "409", responseMessage: `Order is '${order.status}'` }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // MOCK rules
     if (otp === "123456") {
       const authCode = Math.floor(100000 + Math.random() * 900000).toString();
-      await supabase
-        .from("orders")
-        .update({ status: "paid", failure_reason: null })
-        .eq("id", order_id);
-      return new Response(
-        JSON.stringify({ approved: true, responseCode: "00", responseMessage: "Approved", authCode }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      await supabase.from("orders")
+        .update({ status: "paid", failure_reason: null, provider_ref: authCode })
+        .eq("id", order_id).eq("status", "awaiting_3ds");
+      return new Response(JSON.stringify({ approved: true, responseCode: "00", responseMessage: "Approved", authCode }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const reason = otp === "000000" ? "insufficient_funds" : "otp_mismatch";
     const code = otp === "000000" ? "51" : "82";
     const message = otp === "000000" ? "Insufficient funds" : "3D Secure authentication failed";
 
-    await supabase
-      .from("orders")
+    await supabase.from("orders")
       .update({ status: "failed", failure_reason: reason })
-      .eq("id", order_id);
+      .eq("id", order_id).eq("status", "awaiting_3ds");
 
-    return new Response(
-      JSON.stringify({ approved: false, responseCode: code, responseMessage: message }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ approved: false, responseCode: code, responseMessage: message }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
-    console.error(err);
+    console.error("mock-verify:", (err as Error).message);
     return new Response(JSON.stringify({ approved: false, responseCode: "500", responseMessage: "Internal error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
