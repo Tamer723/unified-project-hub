@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     } catch {
       body = null;
     }
-    const { action, user_id, role, email, redirectTo } = body ?? {};
+    const { action, user_id, role, email, redirectTo, password } = body ?? {};
 
     if (req.method === "POST" && action) {
       // grant role
@@ -96,6 +96,19 @@ Deno.serve(async (req) => {
           if (rErr && !rErr.message.includes("duplicate")) throw rErr;
         }
         return ok({ user_id: newId });
+      }
+
+      // set password (admin manually resets a user's password)
+      if (action === "set_password" && user_id && typeof password === "string") {
+        if (password.length < 8) {
+          return new Response(JSON.stringify({ error: "كلمة المرور قصيرة (8 أحرف على الأقل)" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error } = await admin.auth.admin.updateUserById(user_id, { password });
+        if (error) throw error;
+        return ok();
       }
 
       // legacy aliases

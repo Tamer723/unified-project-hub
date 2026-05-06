@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Loader2, MoreHorizontal, UserPlus } from "lucide-react";
+import { Loader2, MoreHorizontal, UserPlus, KeyRound } from "lucide-react";
 
 type AUser = {
   id: string;
@@ -58,6 +58,9 @@ export default function Users() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("viewer");
+  const [pwUser, setPwUser] = useState<AUser | null>(null);
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -92,6 +95,17 @@ export default function Users() {
     });
     setInviteOpen(false);
     setInviteEmail("");
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw.length < 8) return toast.error("8 أحرف على الأقل");
+    if (newPw !== newPw2) return toast.error("كلمتا المرور غير متطابقتين");
+    if (!pwUser) return;
+    await mutate.mutateAsync({ action: "set_password", user_id: pwUser.id, password: newPw });
+    setPwUser(null);
+    setNewPw("");
+    setNewPw2("");
   };
 
   if (isLoading)
@@ -212,6 +226,10 @@ export default function Users() {
                           سحب: {ROLE_LABEL[r as Role] ?? r}
                         </DropdownMenuItem>
                       ))}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setPwUser(u)}>
+                        <KeyRound className="h-4 w-4 mr-2" /> تعيين كلمة مرور
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -220,6 +238,32 @@ export default function Users() {
           </tbody>
         </table>
       </Card>
+
+      <Dialog open={!!pwUser} onOpenChange={(o) => !o && setPwUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تعيين كلمة مرور — {pwUser?.email}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div>
+              <Label htmlFor="np1">كلمة المرور الجديدة</Label>
+              <Input id="np1" type="password" minLength={8} value={newPw}
+                onChange={(e) => setNewPw(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="np2">تأكيد</Label>
+              <Input id="np2" type="password" minLength={8} value={newPw2}
+                onChange={(e) => setNewPw2(e.target.value)} required />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              سيتم تغيير كلمة مرور المستخدم فوراً. أبلغه بها عبر قناة آمنة.
+            </p>
+            <Button type="submit" className="w-full" disabled={mutate.isPending}>
+              {mutate.isPending ? "..." : "تحديث كلمة المرور"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
