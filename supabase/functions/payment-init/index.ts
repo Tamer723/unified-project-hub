@@ -109,11 +109,12 @@ Deno.serve(async (req) => {
     // Active provider
     const { data: settings } = await supabase
       .from("payment_settings").select("active_provider, test_mode").limit(1).maybeSingle();
-    const activeProvider = (settings?.active_provider ?? "mock") as "mock" | "nestpay_3d" | "nestpay_hosting";
+    const activeProvider = (settings?.active_provider ?? "mock") as "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
     const testMode = settings?.test_mode ?? true;
 
-    // Card required for mock + nestpay_3d, NOT for nestpay_hosting
-    const needsCard = activeProvider !== "nestpay_hosting";
+    // Card required for mock + nestpay_3d + iyzico_3ds, NOT for hosted flows
+    const hostedFlow = activeProvider === "nestpay_hosting" || activeProvider === "iyzico_checkout";
+    const needsCard = !hostedFlow;
     if (needsCard && !card) {
       return new Response(JSON.stringify({ responseCode: "400", responseMessage: "Card required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -209,6 +210,141 @@ Deno.serve(async (req) => {
         order_id: order.id, transactionId: txnId, threeDSUrl,
         amount: total, currency: serverCurrency, last4,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== IYZICO (Checkout Form OR 3DS) =====
+    if (activeProvider === "iyzico_checkout" || activeProvider === "iyzico_3ds") {
+      const iyzApiKey = Deno.env.get("IYZICO_API_KEY");
+      const iyzSecret = Deno.env.get("IYZICO_SECRET_KEY");
+      if (!iyzApiKey || !iyzSecret) {
+        await supabase.from("orders").update({
+          status: "failed", failure_reason: "iyzico credentials not configured",
+        }).eq("id", order.id);
+        return new Response(JSON.stringify({
+          responseCode: "503", responseMessage: "iyzico not configured. Add IYZICO_API_KEY and IYZICO_SECRET_KEY secrets.",
+        }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const iyzBase = testMode ? "https://sandbox-api.iyzipay.com" : "https://api.iyzipay.com";
+      const callbackBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-callback`;
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "85.34.78.112";
+      const priceStr = total.toFixed(2);
+      const iyzCurrency = serverCurrency === "TRY" ? "TRY" : serverCurrency === "USD" ? "USD" : "TRY";
+
+      const buyer = {
+        id: order.id,
+        name: donor.name.split(" ")[0] || donor.name,
+        surname: donor.name.split(" ").slice(1).join(" ") || donor.name,
+        gsmNumber: donor.phone || "+905350000000",
+        email: donor.email,
+        identityNumber: "11111111111",
+        registrationAddress: "N/A",
+        ip,
+        city: "Istanbul",
+        country: "Turkey",
+      };
+      const address = { contactName: donor.name, city: "Istanbul", country: "Turkey", address: "N/A" };
+      const basketItems = [{
+        id: resolvedProduct || order.id,
+        name: intention || "Donation",
+        category1: "Donation",
+        itemType: "VIRTUAL",
+        price: priceStr,
+      }];
+
+      const reqBody: Record<string, unknown> = {
+        locale: "tr",
+        conversationId: order.id,
+        price: priceStr,
+        paidPrice: priceStr,
+        currency: iyzCurrency,
+        basketId: order.id,
+        paymentGroup: "PRODUCT",
+        callbackUrl: callbackBase,
+        buyer,
+        shippingAddress: address,
+        billingAddress: address,
+        basketItems,
+      };
+
+      let path = "";
+      if (activeProvider === "iyzico_checkout") {
+        path = "/payment/iyzipay/checkoutform/initialize/auth/ecom";
+      } else {
+        // 3DS — needs card
+        path = "/payment/3dsecure/initialize";
+        const digits = card!.number.replace(/\D/g, "");
+        reqBody.paymentChannel = "WEB";
+        reqBody.paymentCard = {
+          cardHolderName: card!.holder || donor.name,
+          cardNumber: digits,
+          expireMonth: String(card!.expMonth).padStart(2, "0"),
+          expireYear: String(card!.expYear),
+          cvc: card!.cvc,
+          registerCard: 0,
+        };
+      }
+
+      const bodyStr = JSON.stringify(reqBody);
+      const randomKey = `${Date.now()}${Math.floor(Math.random() * 1e9)}`;
+      // iyzico v2 (IYZWSv2) signature
+      const payload = randomKey + path + bodyStr;
+      const keyData = new TextEncoder().encode(iyzSecret);
+      const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+      const sigBuf = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(payload));
+      const sigHex = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const authStr = `apiKey:${iyzApiKey}&randomKey:${randomKey}&signature:${sigHex}`;
+      const authHeader = "IYZWSv2 " + encodeBase64(new TextEncoder().encode(authStr));
+
+      const iyzRes = await fetch(`${iyzBase}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+          "x-iyzi-rnd": randomKey,
+        },
+        body: bodyStr,
+      });
+      const iyzJson = await iyzRes.json();
+      console.log("iyzico init response:", JSON.stringify(iyzJson));
+
+      if (iyzJson.status !== "success") {
+        await supabase.from("orders").update({
+          status: "failed",
+          failure_reason: iyzJson.errorMessage || "iyzico init failed",
+        }).eq("id", order.id);
+        return new Response(JSON.stringify({
+          responseCode: "502",
+          responseMessage: iyzJson.errorMessage || "iyzico init failed",
+          details: iyzJson,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Save token for callback verification
+      await supabase.from("orders").update({
+        provider_ref: iyzJson.token || iyzJson.paymentId || null,
+        metadata: { iyzico_init: iyzJson },
+      }).eq("id", order.id);
+
+      if (activeProvider === "iyzico_checkout") {
+        return new Response(JSON.stringify({
+          responseCode: "00", responseMessage: "Redirect",
+          mode: "redirect_url",
+          order_id: order.id, transactionId: txnId,
+          action: iyzJson.paymentPageUrl,
+          amount: total, currency: serverCurrency, last4,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } else {
+        // 3DS — return HTML to render in iframe
+        const html = atob(iyzJson.threeDSHtmlContent || "");
+        return new Response(JSON.stringify({
+          responseCode: "00", responseMessage: "3DS",
+          mode: "render_html",
+          order_id: order.id, transactionId: txnId,
+          html,
+          amount: total, currency: serverCurrency, last4,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // ===== NESTPAY (3D or HOSTING) =====

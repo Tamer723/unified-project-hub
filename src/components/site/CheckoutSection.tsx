@@ -108,16 +108,18 @@ export function CheckoutSection({ selection }: Props) {
   const [agree, setAgree] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [activeProvider, setActiveProvider] = useState<"mock" | "nestpay_3d" | "nestpay_hosting">("mock");
+  type ProviderId = "mock" | "nestpay_3d" | "nestpay_hosting" | "iyzico_checkout" | "iyzico_3ds";
+  const [activeProvider, setActiveProvider] = useState<ProviderId>("mock");
+  const [threeDSHtml, setThreeDSHtml] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.rpc("get_active_payment_provider").then(({ data }) => {
       const row = Array.isArray(data) ? data[0] : data;
-      if (row?.active_provider) setActiveProvider(row.active_provider as typeof activeProvider);
+      if (row?.active_provider) setActiveProvider(row.active_provider as ProviderId);
     });
   }, []);
 
-  const cardOnSite = activeProvider !== "nestpay_hosting";
+  const cardOnSite = activeProvider === "mock" || activeProvider === "nestpay_3d" || activeProvider === "iyzico_3ds";
 
   const unitPrice = selection?.unitPrice ?? 0;
   const total = unitPrice * quantity;
@@ -264,6 +266,10 @@ export function CheckoutSection({ selection }: Props) {
         navigate(url);
       } else if (data.mode === "redirect_post" && data.action && data.fields) {
         submitRedirectPost(data.action, data.fields);
+      } else if (data.mode === "redirect_url" && data.action) {
+        window.location.href = data.action;
+      } else if (data.mode === "render_html" && data.html) {
+        setThreeDSHtml(data.html);
       } else {
         toast.error("Unexpected payment response");
       }
@@ -424,10 +430,10 @@ export function CheckoutSection({ selection }: Props) {
               {!cardOnSite && (
                 <div className="rounded-2xl border border-sand/40 bg-cream-dark/40 p-5 text-sm text-brown-mid">
                   {locale === "ar"
-                    ? "سيتم تحويلك إلى صفحة الدفع الآمنة لبنك زراعات لإدخال بيانات بطاقتك."
+                    ? "سيتم تحويلك إلى صفحة الدفع الآمنة لإدخال بيانات بطاقتك."
                     : locale === "tr"
-                      ? "Kart bilgilerinizi girmek için Ziraat Bankası'nın güvenli ödeme sayfasına yönlendirileceksiniz."
-                      : "You will be redirected to Ziraat Bank's secure payment page to enter your card details."}
+                      ? "Kart bilgilerinizi girmek için güvenli ödeme sayfasına yönlendirileceksiniz."
+                      : "You will be redirected to the secure payment page to enter your card details."}
                 </div>
               )}
 
@@ -644,6 +650,26 @@ export function CheckoutSection({ selection }: Props) {
           )}
         </div>
       </div>
+
+      {threeDSHtml && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md h-[600px] bg-white rounded-2xl overflow-hidden relative">
+            <button
+              onClick={() => setThreeDSHtml(null)}
+              className="absolute top-2 right-2 z-10 rounded-full bg-black/50 text-white w-8 h-8 text-sm"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <iframe
+              title="3DS Challenge"
+              srcDoc={threeDSHtml}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
