@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { donor, intention, quantity, currency, product_id, matrix_id, card, captchaToken } = parsed.data;
+    const { donor, intention, quantity, currency, product_id, matrix_id, track_code, card, captchaToken } = parsed.data;
 
     // 1. CAPTCHA verification
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
