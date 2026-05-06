@@ -11,6 +11,14 @@ import { Download, Loader2 } from "lucide-react";
 const fmt = (n: number, c: string) =>
   c === "USD" ? `$${n.toLocaleString("en-US")}` : `${n.toLocaleString("tr-TR")} ₺`;
 
+const trackLabel = (o: Order) => o.products?.title_ar || o.products?.title_en || o.products?.code || "—";
+const trackVariant = (o: Order) => {
+  if (o.product_price_matrix) {
+    return `${o.product_price_matrix.country_code} · ${o.product_price_matrix.animal_code}`;
+  }
+  return null;
+};
+
 export default function Orders() {
   const { data: orders, isLoading } = useOrders();
   const [search, setSearch] = useState("");
