@@ -53,7 +53,17 @@ function redirect(url: string): Response {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const origin = siteOrigin(req);
+  // Read lang/origin from URL query (set when we built the callbackUrl)
+  const reqUrl = new URL(req.url);
+  const queryLang = reqUrl.searchParams.get("lang");
+  const queryOrigin = reqUrl.searchParams.get("o");
+  let lang = (queryLang === "ar" || queryLang === "tr" || queryLang === "en") ? queryLang : "ar";
+  let origin = siteOrigin(req, queryOrigin, null);
+
+  function appendLang(url: string): string {
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}lang=${lang}`;
+  }
 
   try {
     // Parse body: NestPay sends application/x-www-form-urlencoded
