@@ -121,6 +121,11 @@ Deno.serve(async (req) => {
     lines.push(`💰 ${order.unit_price} ${order.currency} × ${order.quantity} = <b>${order.total_amount} ${order.currency}</b>`);
     if (order.intention) lines.push(`📝 ${escapeHtml(order.intention)}`);
     if (order.failure_reason) lines.push(`⚠️ ${escapeHtml(order.failure_reason)}`);
+    if ((order as any).donor_country || (order as any).donor_ip) {
+      const dc = (order as any).donor_country;
+      const dip = (order as any).donor_ip;
+      lines.push(`📡 ${dc ? `${isoFlag(dc)} ${dc}` : ""}${dip ? `  <code>${escapeHtml(dip)}</code>` : ""}`.trim());
+    }
     lines.push(`🕐 ${new Date().toLocaleString("ar-SY", { timeZone: "Europe/Istanbul" })}`);
 
     await sendTelegram(chatId, lines.join("\n"));
