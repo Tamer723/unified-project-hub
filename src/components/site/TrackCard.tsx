@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { formatPrice, COUNTRY_CODES, ANIMAL_CODES, type CountryCode, type AnimalCode } from "@/lib/pricing";
-import { resolveTrackPrice } from "@/hooks/usePricing";
+import { resolveTrackPrice, resolveTrackWeight } from "@/hooks/usePricing";
 import type { Locale } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
