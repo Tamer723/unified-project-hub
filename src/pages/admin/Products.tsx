@@ -97,6 +97,13 @@ export default function Products() {
             <div className="text-xs text-muted-foreground">
               العملة: <span className="font-mono">{p.currency}</span> · النوع: <span className="font-mono">{p.pricing_type}</span>
             </div>
+            <div className="space-y-2 border-t pt-3">
+              <div className="text-xs font-semibold text-muted-foreground">الصور (حسب اللغة)</div>
+              <Field label="الصورة الافتراضية" defaultValue={p.image_url ?? ""} onSave={(v) => update.mutate({ id: p.id, patch: { image_url: v || null } })} />
+              <Field label="صورة AR" defaultValue={p.image_url_ar ?? ""} onSave={(v) => update.mutate({ id: p.id, patch: { image_url_ar: v || null } })} />
+              <Field label="صورة EN" defaultValue={p.image_url_en ?? ""} onSave={(v) => update.mutate({ id: p.id, patch: { image_url_en: v || null } })} />
+              <Field label="صورة TR" defaultValue={p.image_url_tr ?? ""} onSave={(v) => update.mutate({ id: p.id, patch: { image_url_tr: v || null } })} />
+            </div>
           </Card>
         ))}
       </div>
