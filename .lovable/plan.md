@@ -1,88 +1,91 @@
-## محاكاة دفع Ziraat 3D Secure (وضع التطوير)
+## تنفيذ تشديد الحماية الكامل (مع Turnstile تجريبي)
 
-سنبني تدفقًا متكاملاً يحاكي بنية ZiraatPay الفعلية، بحيث عند وصول بيانات الدخول الحقيقية نستبدل عنوان واحد فقط ونُمرّر السر الفعلي — دون تغيير الواجهة أو منطق الطلبات.
+سأطبّق كل طبقات الحماية المتفق عليها سابقًا، مع استخدام مفاتيح Turnstile التجريبية الرسمية من Cloudflare التي تنجح دائمًا — ليسهل استبدالها لاحقًا بمفاتيحك الحقيقية بتغيير قيمتين فقط.
 
-### بنية الـ 3D Secure التي سنحاكيها
+### 1. Migration على قاعدة البيانات
 
-```text
-[Front] --(card+order)--> [edge: ziraat-payment-init]
-                                  |
-                                  v
-                          إنشاء order (pending)
-                                  |
-                                  v
-                          إرجاع threeDSUrl
-                                  |
-[Front] --redirect--> [page: /payment/3ds-mock]  (محاكاة شاشة OTP البنك)
-                                  |
-                          المستخدم يدخل OTP
-                                  |
-                                  v
-[Front] --(otp+orderId)--> [edge: ziraat-payment-verify]
-                                  |
-                                  v
-                  تحديث الطلب (success/failed)
-                                  |
-                                  v
-              redirect إلى /success أو /failed
+**أ. تشديد سياسة INSERT على `orders`:**
+```sql
+DROP POLICY "Anyone can create order" ON public.orders;
+
+CREATE POLICY "Anonymous can create pending orders only"
+ON public.orders FOR INSERT TO anon, authenticated
+WITH CHECK (
+  status = 'pending'
+  AND total_amount > 0 AND total_amount < 1000000
+  AND quantity > 0 AND quantity <= 100
+  AND char_length(donor_name) BETWEEN 2 AND 80
+  AND char_length(donor_email) <= 255
+  AND donor_email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+  AND (donor_phone IS NULL OR char_length(donor_phone) <= 40)
+  AND provider_txn_id IS NULL
+  AND card_meta IS NULL
+  AND failure_reason IS NULL
+);
+```
+ملاحظة: `ziraat-payment-init` يستخدم `service_role` فيتجاوز RLS (يضع `awaiting_3ds` و `card_meta` بحرية). أي عميل عادي لن يستطيع إنشاء طلب مدفوع مزوّر.
+
+**ب. Trigger لحماية الحقول المالية من التعديل بعد الإنشاء:**
+```sql
+CREATE OR REPLACE FUNCTION public.protect_order_fields()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+  IF NEW.total_amount <> OLD.total_amount
+     OR NEW.currency <> OLD.currency
+     OR NEW.unit_price <> OLD.unit_price
+     OR NEW.quantity <> OLD.quantity
+     OR NEW.product_id <> OLD.product_id THEN
+    RAISE EXCEPTION 'Financial fields are immutable';
+  END IF;
+  RETURN NEW;
+END;$$;
+
+CREATE TRIGGER orders_protect_financial
+BEFORE UPDATE ON public.orders
+FOR EACH ROW EXECUTE FUNCTION public.protect_order_fields();
 ```
 
-### 1. Edge Functions جديدة
+### 2. تحسين `ziraat-payment-init`
 
-**`supabase/functions/ziraat-payment-init/index.ts`**
-- يستقبل: `order_id`, `card { number, holder, expMonth, expYear, cvc }`, `amount`, `currency`.
-- في وضع المحاكاة (`MOCK_PAYMENT=true` افتراضيًا):
-  - يخزّن البطاقة المُقنّعة (آخر 4 أرقام فقط) و `bin` في حقل `card_meta` على الطلب.
-  - يضع الطلب في حالة `awaiting_3ds`.
-  - يُرجع `{ threeDSUrl: "/payment/3ds-mock?orderId=..." , transactionId }`.
-- بنية الاستجابة مطابقة لـ ZiraatPay (`responseCode`, `responseMessage`, `threeDSHtml`/`threeDSUrl`) ليكون الاستبدال سهلاً.
+- **التحقق من السعر من DB:** بدلاً من الثقة بـ `unit_price` القادم من العميل، نقرأ السعر الحقيقي من `product_price_matrix` (إن وُجد `matrix_id`) أو من `products.base_price`، ونحسب `total_amount` على الخادم.
+- **التحقق من Turnstile token:** نستقبل `captchaToken` ونتحقق منه عبر `https://challenges.cloudflare.com/turnstile/v0/siteverify`.
+- **تنظيف الكود:** التأكد من عدم تسجيل أي بيانات بطاقة في console.
 
-**`supabase/functions/ziraat-payment-verify/index.ts`**
-- يستقبل: `order_id`, `otp`.
-- في المحاكاة:
-  - `otp === "123456"` → نجاح → الطلب `paid`.
-  - `otp === "000000"` → فشل بطاقة → `failed (insufficient_funds)`.
-  - غير ذلك → فشل OTP → `failed (otp_mismatch)`.
-- يُرجع نفس شكل استجابة Ziraat (`approved`, `authCode`, `responseCode`).
+### 3. تحسين `ziraat-payment-verify` (Idempotency)
 
-كلتاهما مع CORS كاملة و Zod validation.
+- رفض التحديث إذا كانت حالة الطلب ليست `awaiting_3ds`.
+- إرجاع نفس النتيجة السابقة إذا حاول العميل تكرار التحقق على طلب `paid` أو `failed`.
 
-### 2. صفحة 3DS وهمية
+### 4. دمج Turnstile في الواجهة
 
-**`src/pages/Payment3DSMock.tsx`** (المسار `/payment/3ds-mock`)
-- تعرض شاشة شبيهة بشاشات OTP للبنوك التركية (شعار "Ziraat 3D Secure"، آخر 4 أرقام من البطاقة، المبلغ، حقل OTP من 6 خانات، عدّاد 60 ثانية).
-- زر "تأكيد" يستدعي `ziraat-payment-verify` ثم يوجّه إلى `/success` أو `/failed`.
-- نص توضيحي صغير: **"وضع المحاكاة — استخدم 123456 للنجاح أو 000000 لفشل البطاقة"**.
+**`src/components/site/CheckoutSection.tsx`:**
+- تحميل سكربت Turnstile (`https://challenges.cloudflare.com/turnstile/v0/api.js`).
+- إضافة `<div class="cf-turnstile" data-sitekey="...">` فوق زر الدفع.
+- عند الضغط على "ادفع"، نقرأ الـ token من الـ widget ونرسله مع طلب init.
 
-### 3. تعديل `CheckoutSection.tsx`
-- زر "ادفع الآن" بدلاً من toast الوهمي:
-  1. يتحقق من صلاحية رقم البطاقة (Luhn) و MM/YY و CVC.
-  2. ينشئ الطلب عبر `create-payment` الموجود (نمدّده ليُعيد `order_id`).
-  3. يستدعي `ziraat-payment-init` ببيانات البطاقة.
-  4. يحفظ بيانات العودة في `sessionStorage` ويوجّه إلى `threeDSUrl`.
-- إضافة تحقق Luhn في ملف مساعد `src/lib/card.ts` (إلى جانب `detectCardBrand` و `formatCardNumber` المنقولين من المكوّن).
+**Site Key المستخدم (تجريبي — ينجح دائمًا):**
+```
+1x00000000000000000000AA
+```
 
-### 4. تعديل قاعدة البيانات (migration)
-على جدول `orders` أضف:
-- `card_meta jsonb` (آخر 4، brand، holder name).
-- `provider text` (`mock_ziraat` افتراضيًا).
-- `provider_txn_id text`.
-- توسيع enum `status` ليشمل `awaiting_3ds`, `paid`, `failed`.
+### 5. Secret في الخادم
 
-### 5. تبديل لاحق إلى Ziraat الحقيقي
-عند توفّر بيانات الدخول:
-- إضافة Secrets: `ZIRAAT_MERCHANT_ID`, `ZIRAAT_TERMINAL_ID`, `ZIRAAT_API_USER`, `ZIRAAT_API_PASSWORD`, `ZIRAAT_3DS_KEY`.
-- في `ziraat-payment-init` نستبدل الفرع الوهمي بطلب POST فعلي إلى:
-  - `https://vpos.ziraatpay.com.tr/ziraatpay/api/v2/initiate3D`
-- نحسب `hashData` (SHA-512 من حقول الطلب + storeKey) كما هو موثّق.
-- نُمرّر `threeDSHtml` المُعاد كما هو إلى المتصفح (إما `iframe srcDoc` أو إعادة توجيه عبر form).
-- `ziraat-payment-verify` يُستبدل بـ webhook على المسار `/functions/v1/ziraat-callback` يستقبل `MdStatus`, `mdErrorMsg` ويُحدّث الطلب — لا تغيير في الواجهة.
+سأطلب منك إضافة:
+- `TURNSTILE_SECRET_KEY` = `1x0000000000000000000000000000000AA` (تجريبي)
 
-### ملفات سيتم إنشاؤها/تعديلها
-- جديدة: `supabase/functions/ziraat-payment-init/index.ts`, `supabase/functions/ziraat-payment-verify/index.ts`, `src/pages/Payment3DSMock.tsx`, `src/lib/card.ts`
-- تعديل: `src/components/site/CheckoutSection.tsx`, `src/App.tsx` (إضافة المسار), migration واحد على `orders`.
+عند جاهزية مفاتيحك الحقيقية: تستبدل قيمة الـ secret + قيمة `siteKey` في `CheckoutSection.tsx`.
 
-### فوائد هذا التصميم
-- يعمل اليوم بدون أي مفاتيح.
-- بنية الاستجابات والمعطيات مطابقة لـ Ziraat → التبديل يكون داخل الـ edge function فقط.
-- بيانات البطاقة الحقيقية لا تُخزَّن أبدًا (PAN كامل لا يصل قاعدة البيانات).
+### 6. عدم تطبيق Rate Limiting
+
+البنية التحتية الحالية لا توفّر primitives موثوقة (لا Redis مدار). نعتمد على Turnstile + قيود RLS كحاجز أساسي ضد الإساءة.
+
+---
+
+### الملفات المتأثرة
+- migration جديدة (سياسة + trigger + function).
+- `supabase/functions/ziraat-payment-init/index.ts` — التحقق من السعر + Turnstile.
+- `supabase/functions/ziraat-payment-verify/index.ts` — idempotency.
+- `src/components/site/CheckoutSection.tsx` — Turnstile widget + إرسال token.
+- إضافة secret `TURNSTILE_SECRET_KEY`.
+
+موافق على التنفيذ؟
