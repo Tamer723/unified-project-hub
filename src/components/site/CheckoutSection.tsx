@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { formatPrice, paymentCurrency } from "@/lib/pricing";
 import { isValidCardNumber, isValidExpiry, isValidCvc } from "@/lib/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Turnstile } from "./Turnstile";
 import type { Locale } from "@/lib/constants";
 import type { TrackSelection } from "./TrackCard";
 
