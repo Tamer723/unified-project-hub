@@ -36,8 +36,22 @@ export function useOrders() {
   });
 }
 
+function useProducts() {
+  return useQuery({
+    queryKey: ["admin-products-lite"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, code, title_ar, title_en");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useAdminStats() {
   const { data: orders, ...rest } = useOrders();
+  const { data: products } = useProducts();
 
   const stats = (() => {
     if (!orders) return null;
@@ -62,10 +76,6 @@ export function useAdminStats() {
     const pending = last30.filter((o) => o.status === "pending" || o.status === "awaiting_3ds").length;
     const total = paid + failed;
     const successRate = total > 0 ? (paid / total) * 100 : 0;
-
-    const aov = paid > 0
-      ? last30.filter((o) => o.status === "paid").reduce((s, o) => s + o.total_amount, 0) / paid
-      : 0;
 
     const animals = last30
       .filter((o) => o.status === "paid")
@@ -94,6 +104,26 @@ export function useAdminStats() {
       count: last30.filter((o) => o.status === s).length,
     }));
 
+    // per-track aggregation (paid only)
+    const productMap = new Map(
+      (products ?? []).map((p: any) => [p.id, { code: p.code, title: p.title_ar || p.title_en || p.code || "—" }])
+    );
+    const tracksMap: Record<string, { id: string; code: string; title: string; animals: number; usd: number; try: number; orders: number }> = {};
+    last30
+      .filter((o) => o.status === "paid")
+      .forEach((o) => {
+        const meta = productMap.get(o.product_id) ?? { code: "—", title: "—" };
+        const key = o.product_id;
+        if (!tracksMap[key]) {
+          tracksMap[key] = { id: key, code: meta.code ?? "—", title: meta.title, animals: 0, usd: 0, try: 0, orders: 0 };
+        }
+        tracksMap[key].animals += o.quantity;
+        tracksMap[key].orders += 1;
+        if (o.currency === "USD") tracksMap[key].usd += o.total_amount;
+        else tracksMap[key].try += o.total_amount;
+      });
+    const tracks = Object.values(tracksMap).sort((a, b) => b.animals - a.animals);
+
     // failure reasons
     const reasonsMap: Record<string, number> = {};
     last30
@@ -114,10 +144,10 @@ export function useAdminStats() {
       failed,
       pending,
       successRate,
-      aov,
       animals,
       daily: Object.values(daily),
       statusCounts,
+      tracks,
       failReasons,
       recent: orders.slice(0, 10),
     };
