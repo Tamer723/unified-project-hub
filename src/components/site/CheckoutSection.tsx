@@ -397,6 +397,11 @@ export function CheckoutSection({ selection }: Props) {
                             clearError("cc_number");
                           }
                         }}
+                        onBlur={() => {
+                          if (cardNumber && !isValidCardNumber(cardNumber)) {
+                            setErrors((p) => ({ ...p, cc_number: locale === "ar" ? "رقم البطاقة غير صالح" : locale === "tr" ? "Geçersiz kart numarası" : "Invalid card number" }));
+                          }
+                        }}
                         className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
                       <div className="absolute inset-y-0 end-3 flex items-center">
@@ -431,6 +436,11 @@ export function CheckoutSection({ selection }: Props) {
                             clearError("cc_exp");
                           }
                         }}
+                        onBlur={() => {
+                          if (cardExpiry && !isValidExpiry(cardExpiry)) {
+                            setErrors((p) => ({ ...p, cc_exp: locale === "ar" ? "تاريخ غير صالح" : locale === "tr" ? "Geçersiz tarih" : "Invalid expiry" }));
+                          }
+                        }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono"
                       />
                       {errors.cc_exp && <p className="mt-1 text-xs text-destructive">{errors.cc_exp}</p>}
@@ -458,6 +468,11 @@ export function CheckoutSection({ selection }: Props) {
                             setErrors((p) => ({ ...p, cc_cvc: "CVC" }));
                           } else {
                             clearError("cc_cvc");
+                          }
+                        }}
+                        onBlur={() => {
+                          if (cardCvc && !isValidCvc(cardCvc, cardBrand)) {
+                            setErrors((p) => ({ ...p, cc_cvc: "CVC" }));
                           }
                         }}
                         className="mt-2 h-12 rounded-xl bg-cream-dark/60 text-left font-mono tracking-widest"
