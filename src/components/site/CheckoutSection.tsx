@@ -386,7 +386,9 @@ export function CheckoutSection({ selection }: Props) {
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "");
                           const brand = detectCardBrand(digits);
-                          setCardNumber(formatCardNumber(digits, brand));
+                          const formatted = formatCardNumber(digits, brand);
+                          setCardNumber(formatted);
+                          if (isValidCardNumber(formatted)) clearError("cc_number");
                         }}
                         className="h-12 rounded-xl bg-cream-dark/60 pe-16 font-mono tracking-wider text-left"
                       />
