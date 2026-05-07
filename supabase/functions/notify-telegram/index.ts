@@ -60,10 +60,10 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 async function isAuthorizedCaller(req: Request): Promise<boolean> {
-  // Allow internal callers (DB trigger) via shared secret
-  const internal = req.headers.get("x-internal-secret");
-  const expected = Deno.env.get("INTERNAL_NOTIFY_SECRET");
-  if (expected && internal && timingSafeEqual(internal, expected)) return true;
+  // Allow internal callers (DB trigger) — sends service-role key as X-Internal-Auth
+  const internalAuth = req.headers.get("x-internal-auth");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (serviceKey && internalAuth && timingSafeEqual(internalAuth, serviceKey)) return true;
 
   // Otherwise require an admin JWT
   const authHeader = req.headers.get("Authorization");
