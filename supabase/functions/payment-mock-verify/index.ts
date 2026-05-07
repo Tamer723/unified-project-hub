@@ -10,7 +10,16 @@ const corsHeaders = {
 const Body = z.object({
   order_id: z.string().uuid(),
   otp: z.string().regex(/^\d{6}$/),
+  nonce: z.string().min(16).max(128),
 });
+
+// Constant-time string compare
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -27,11 +36,11 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { order_id, otp } = parsed.data;
+    const { order_id, otp, nonce } = parsed.data;
 
     const { data: order } = await supabase
       .from("orders")
-      .select("id, status, provider")
+      .select("id, status, provider, metadata")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -40,7 +49,6 @@ Deno.serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Only mock orders allowed here
     if (order.provider !== "mock") {
       return new Response(JSON.stringify({ approved: false, responseCode: "403", responseMessage: "Not a mock order" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -52,10 +60,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate per-order nonce (issued at payment-init time)
+    const expectedNonce = (order.metadata as { mock_nonce?: string } | null)?.mock_nonce;
+    if (!expectedNonce || !timingSafeEqual(expectedNonce, nonce)) {
+      return new Response(JSON.stringify({ approved: false, responseCode: "401", responseMessage: "Invalid session" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Per-order rate limiting: max 5 attempts
+    const prevMeta = (order.metadata ?? {}) as Record<string, unknown>;
+    const attempts = Number(prevMeta.mock_attempts ?? 0) + 1;
+    if (attempts > 5) {
+      await supabase.from("orders")
+        .update({ status: "failed", failure_reason: "too_many_attempts" })
+        .eq("id", order_id).eq("status", "awaiting_3ds");
+      return new Response(JSON.stringify({ approved: false, responseCode: "429", responseMessage: "Too many attempts" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await supabase.from("orders")
+      .update({ metadata: { ...prevMeta, mock_attempts: attempts } })
+      .eq("id", order_id);
+
     if (otp === "123456") {
       const authCode = Math.floor(100000 + Math.random() * 900000).toString();
+      // Invalidate nonce after success
+      const { mock_nonce: _n, ...metaWithoutNonce } = prevMeta as Record<string, unknown>;
       await supabase.from("orders")
-        .update({ status: "paid", failure_reason: null, provider_ref: authCode })
+        .update({ status: "paid", failure_reason: null, provider_ref: authCode, metadata: { ...metaWithoutNonce, mock_attempts: attempts } })
         .eq("id", order_id).eq("status", "awaiting_3ds");
       return new Response(JSON.stringify({ approved: true, responseCode: "00", responseMessage: "Approved", authCode }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
