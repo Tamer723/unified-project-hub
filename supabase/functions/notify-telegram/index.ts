@@ -52,10 +52,50 @@ function isoFlag(code?: string | null): string {
   return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
+async function isAuthorizedCaller(req: Request): Promise<boolean> {
+  // Allow internal callers (DB trigger) via shared secret
+  const internal = req.headers.get("x-internal-secret");
+  const expected = Deno.env.get("INTERNAL_NOTIFY_SECRET");
+  if (expected && internal && timingSafeEqual(internal, expected)) return true;
+
+  // Otherwise require an admin JWT
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: claims, error } = await supabase.auth.getClaims(token);
+  if (error || !claims?.claims?.sub) return false;
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const { data: roleRow } = await admin
+    .from("user_roles").select("role")
+    .eq("user_id", claims.claims.sub).eq("role", "admin").maybeSingle();
+  return !!roleRow;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    if (!(await isAuthorizedCaller(req))) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const chatId = Deno.env.get("TELEGRAM_ADMIN_CHAT_ID");
     if (!chatId) {
       return new Response(JSON.stringify({ error: "TELEGRAM_ADMIN_CHAT_ID is not configured" }), {
