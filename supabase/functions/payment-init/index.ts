@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
+
 const DEFAULT_NESTPAY_HOST_TEST = "https://entegrasyon.asseco-see.com.tr/fim/est3Dgate";
 const DEFAULT_NESTPAY_HOST_PROD = "https://sanalposprov.ziraatbank.com.tr/fim/est3Dgate";
 
