@@ -205,16 +205,27 @@ Deno.serve(async (req) => {
       return redirect(appendLang(`${origin}/failed?reason=missing_oid`));
     }
 
-    // Hash verification (only if storeKey configured AND HASH present)
+    // Hash verification — REQUIRED for NestPay callbacks (no fallback)
     const storeKey = Deno.env.get("NESTPAY_STORE_KEY");
     const receivedHash = params.HASH || params.hash || "";
-    let hashOk = false;
-    if (storeKey && receivedHash) {
-      const computed = await hashV3(params, storeKey);
-      hashOk = computed === receivedHash;
-      if (!hashOk) {
-        console.error("callback: hash mismatch", { oid, computed, receivedHash });
-      }
+    if (!storeKey) {
+      console.error("callback: NESTPAY_STORE_KEY not configured — rejecting");
+      return redirect(appendLang(`${origin}/failed?reason=provider_misconfigured`));
+    }
+    if (!receivedHash) {
+      console.error("callback: missing HASH on NestPay callback", { oid });
+      return redirect(appendLang(`${origin}/failed?reason=missing_hash`));
+    }
+    const computed = await hashV3(params, storeKey);
+    // Constant-time compare
+    let hashOk = computed.length === receivedHash.length;
+    if (hashOk) {
+      let r = 0;
+      for (let i = 0; i < computed.length; i++) r |= computed.charCodeAt(i) ^ receivedHash.charCodeAt(i);
+      hashOk = r === 0;
+    }
+    if (!hashOk) {
+      console.error("callback: hash mismatch", { oid });
     }
 
     const mdStatus = params.mdStatus || "";
@@ -229,7 +240,7 @@ Deno.serve(async (req) => {
     let finalStatus: "paid" | "failed" = "failed";
     let failureReason: string | null = null;
 
-    if (storeKey && receivedHash && !hashOk) {
+    if (!hashOk) {
       failureReason = "Hash mismatch";
     } else if (!threeDsOk) {
       failureReason = errMsg || `3DS failed (mdStatus=${mdStatus})`;
