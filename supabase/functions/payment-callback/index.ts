@@ -75,10 +75,12 @@ Deno.serve(async (req) => {
   const reqUrl = new URL(req.url);
   const queryLang = reqUrl.searchParams.get("lang");
   const queryOrigin = reqUrl.searchParams.get("o");
-  let lang = (queryLang === "ar" || queryLang === "tr" || queryLang === "en") ? queryLang : "ar";
+  let lang: "ar" | "tr" | "en" | null =
+    queryLang === "ar" || queryLang === "tr" || queryLang === "en" ? queryLang : null;
   let origin = siteOrigin(req, queryOrigin, null);
 
   function appendLang(url: string): string {
+    if (!lang) return url;
     const sep = url.includes("?") ? "&" : "?";
     return `${url}${sep}lang=${lang}`;
   }
