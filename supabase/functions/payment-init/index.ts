@@ -56,7 +56,11 @@ function luhnOk(d: string): boolean {
   return sum % 10 === 0;
 }
 async function verifyTurnstile(token: string, ip: string | null): Promise<boolean> {
-  const secret = Deno.env.get("TURNSTILE_SECRET_KEY") || TURNSTILE_TEST_SECRET;
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
+  if (!secret) {
+    console.error("TURNSTILE_SECRET_KEY is not configured — failing closed");
+    return false;
+  }
   const form = new URLSearchParams();
   form.append("secret", secret);
   form.append("response", token);
@@ -226,7 +230,14 @@ Deno.serve(async (req) => {
 
     // ===== MOCK =====
     if (activeProvider === "mock") {
-      const threeDSUrl = `/payment/3ds-mock?orderId=${order.id}&txn=${txnId}`;
+      // Bind verify call to a per-order nonce to prevent unauthenticated order manipulation
+      const nonceBytes = new Uint8Array(24);
+      crypto.getRandomValues(nonceBytes);
+      const nonce = Array.from(nonceBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+      await supabase.from("orders").update({
+        metadata: { lang, origin: safeOrigin, mock_nonce: nonce },
+      }).eq("id", order.id);
+      const threeDSUrl = `/payment/3ds-mock?orderId=${order.id}&txn=${txnId}&n=${nonce}`;
       return new Response(JSON.stringify({
         responseCode: "00", responseMessage: "Approved",
         mode: "internal_3ds",
