@@ -14,6 +14,7 @@ export default function Payment3DSMock() {
   const locale = (i18n.language?.split("-")[0] || "ar") as "ar" | "tr" | "en";
   const orderId = params.get("orderId") ?? "";
   const txn = params.get("txn") ?? "";
+  const nonce = params.get("n") ?? "";
   const last4 = params.get("last4") ?? "····";
   const amount = Number(params.get("amount") ?? 0);
   const currency = params.get("currency") ?? "USD";
@@ -94,7 +95,7 @@ export default function Payment3DSMock() {
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("payment-mock-verify", {
-        body: { order_id: orderId, otp },
+        body: { order_id: orderId, otp, nonce },
       });
       if (error) throw error;
       if (data?.approved) {
