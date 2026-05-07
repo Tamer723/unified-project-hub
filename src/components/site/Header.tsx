@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageBar } from "./LanguageBar";
 import { CountdownBar } from "./CountdownBar";
+import logo from "@/assets/logo.png";
 
 export function Header() {
   const { t } = useTranslation();
@@ -19,9 +20,7 @@ export function Header() {
       <div className="border-b border-sand/30 bg-background/85 backdrop-blur-md">
         <div className="container flex items-center justify-between gap-4 py-3">
           <a href="#" className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-green text-primary-foreground font-extrabold shadow-soft">
-              ق
-            </div>
+            <img src={logo} alt={t("header.name")} className="h-10 w-10 object-contain" />
             <span className="hidden text-sm font-bold text-brown sm:block">
               {t("header.name")}
             </span>
